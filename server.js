@@ -1,42 +1,53 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 
 app.use(cors());
 
-// --- Configuración de zonas y bloques ---
+// ---- Configuración de zonas y bloques ----
 const zonas = {
-  'blue': {
-    name: 'Zona azul',
+  'playa': {
+    name: 'Zona Playa',
+    color: '#FFD600', // Amarillo
     bloques: [
-      { minutos: 5, timeInSeconds: 300, priceInCents: 20 },
-      { minutos: 10, timeInSeconds: 600, priceInCents: 35 },
-      { minutos: 15, timeInSeconds: 900, priceInCents: 45 },
-      { minutos: 30, timeInSeconds: 1800, priceInCents: 80 },
-      { minutos: 60, timeInSeconds: 3600, priceInCents: 150 }
+      { minutos: 8,  timeInSeconds: 480,  priceInCents: 19 },
+      { minutos: 16, timeInSeconds: 960,  priceInCents: 34 },
+      { minutos: 32, timeInSeconds: 1920, priceInCents: 65 },
+      { minutos: 60, timeInSeconds: 3600, priceInCents: 110 }
     ],
     maxDurationSeconds: 7200 // 2 horas
   },
-  'green': {
-    name: 'Zona verde',
+  'costa': {
+    name: 'Zona Costa',
+    color: '#1891FF', // Azul
     bloques: [
-      { minutos: 5, timeInSeconds: 300, priceInCents: 25 },
-      { minutos: 10, timeInSeconds: 600, priceInCents: 40 },
-      { minutos: 15, timeInSeconds: 900, priceInCents: 60 },
-      { minutos: 30, timeInSeconds: 1800, priceInCents: 100 },
-      { minutos: 60, timeInSeconds: 3600, priceInCents: 180 }
+      { minutos: 10, timeInSeconds: 600,  priceInCents: 24 },
+      { minutos: 20, timeInSeconds: 1200, priceInCents: 40 },
+      { minutos: 45, timeInSeconds: 2700, priceInCents: 85 },
+      { minutos: 90, timeInSeconds: 5400, priceInCents: 170 }
     ],
-    maxDurationSeconds: 5400 // 1 hora y media
+    maxDurationSeconds: 10800 // 3 horas
+  },
+  'parque': {
+    name: 'Zona Parque',
+    color: '#9C27B0', // Morado
+    bloques: [
+      { minutos: 15, timeInSeconds: 900,  priceInCents: 20 },
+      { minutos: 30, timeInSeconds: 1800, priceInCents: 36 },
+      { minutos: 60, timeInSeconds: 3600, priceInCents: 65 },
+      { minutos: 120, timeInSeconds: 7200, priceInCents: 120 }
+    ],
+    maxDurationSeconds: 14400 // 4 horas
   }
 };
 
-// ---- Nuevo ENDPOINT: listado de zonas ----
+// ---- ENDPOINT: listado de zonas (con color) ----
 app.get('/v1/onstreet-service/zones', (req, res) => {
-  // Devuelve todas las zonas en formato { id, name }
   const allZones = Object.entries(zonas).map(([id, zona]) => ({
     id,
-    name: zona.name
+    name: zona.name,
+    color: zona.color
   }));
   res.json(allZones);
 });
@@ -48,7 +59,6 @@ app.get('/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate', (req, res) 
 
   if (!zona) return res.json([]);
 
-  // Los steps son los bloques válidos
   const steps = zona.bloques.map(bloque => ({
     ...bloque,
     endDateTime: new Date(new Date().getTime() + bloque.timeInSeconds * 1000).toISOString()
@@ -64,12 +74,13 @@ app.get('/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate', (req, res) 
       extensible: true,
       coldDownTime: 120,
       name: zona.name,
+      color: zona.color, // Campo para la app Flutter
       description: `${zona.name} - Tarifa por bloques`,
       rateSteps: {
         steps: steps,
         firstStepStartsAt: new Date().toISOString(),
         startTimeInSeconds: 0,
-        minEndTimeInSeconds: 180,
+        minEndTimeInSeconds: Math.min(...zona.bloques.map(b => b.timeInSeconds)),
         ticketId: 1,
         priceRequestedAt: new Date().toISOString(),
         timeZone: "Europe/Madrid",
@@ -88,8 +99,7 @@ app.get('/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate', (req, res) 
 // Array de tickets pagados
 // =========================
 let ticketsPagados = [
-  { plate: "1234ABC", ticketId: 1 },
-  { plate: "5678DEF", ticketId: 2 }
+  { plate: "ABCD123", ticketId: 1 }
 ];
 
 // =====================================
@@ -98,7 +108,6 @@ let ticketsPagados = [
 app.post('/v1/onstreet-service/pay-ticket', express.json(), (req, res) => {
   const { plate } = req.body;
   if (!plate) return res.status(400).json({ error: "Falta matrícula" });
-  // Evita duplicados
   if (ticketsPagados.some(t => t.plate === plate)) {
     return res.json({ success: false, message: "Ticket ya existe" });
   }
@@ -112,7 +121,6 @@ app.post('/v1/onstreet-service/pay-ticket', express.json(), (req, res) => {
 app.get('/v1/onstreet-service/validate-ticket/:plate', (req, res) => {
   const { plate } = req.params;
   const ticket = ticketsPagados.find(t => t.plate === plate);
-
   if (ticket) {
     res.json({ valid: true, message: "Ticket pagado y válido", ticketId: ticket.ticketId });
   } else {
@@ -121,5 +129,5 @@ app.get('/v1/onstreet-service/validate-ticket/:plate', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Mock Express MOWIZ funcionando en http://localhost:${PORT}`);
+  console.log(`✅ Mock Express Server funcionando en http://localhost:${PORT}`);
 });
