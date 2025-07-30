@@ -5,53 +5,36 @@ const PORT = 3000;
 
 app.use(cors());
 
-// --- Configuración de zonas y bloques (con color) ---
 const zonas = {
   'blue': {
     name: 'Zona azul',
-    color: '#1891FF', // Azul
     bloques: [
-      { minutos: 5, timeInSeconds: 300, priceInCents: 20 },
-      { minutos: 10, timeInSeconds: 600, priceInCents: 35 },
-      { minutos: 15, timeInSeconds: 900, priceInCents: 45 },
-      { minutos: 30, timeInSeconds: 1800, priceInCents: 80 },
-      { minutos: 60, timeInSeconds: 3600, priceInCents: 150 }
+      { minutos: 5, timeInSeconds: 180, priceInCents: 10, commissionPriceInCents: 5 },
+      { minutos: 10, timeInSeconds: 300, priceInCents: 15, commissionPriceInCents: 10 },
+      { minutos: 15, timeInSeconds: 900, priceInCents: 50, commissionPriceInCents: 20 }
     ],
     maxDurationSeconds: 7200 // 2 horas
   },
   'green': {
     name: 'Zona verde',
-    color: '#01AE00', // Verde
     bloques: [
-      { minutos: 5, timeInSeconds: 300, priceInCents: 25 },
-      { minutos: 10, timeInSeconds: 600, priceInCents: 40 },
-      { minutos: 15, timeInSeconds: 900, priceInCents: 60 },
-      { minutos: 30, timeInSeconds: 1800, priceInCents: 100 },
-      { minutos: 60, timeInSeconds: 3600, priceInCents: 180 }
+      { minutos: 3, timeInSeconds: 180, priceInCents: 100, commissionPriceInCents: 4 },
+      { minutos: 5, timeInSeconds: 300, priceInCents: 200, commissionPriceInCents: 8 },
+      { minutos: 15, timeInSeconds: 900, priceInCents: 300, commissionPriceInCents: 18 }
     ],
-    maxDurationSeconds: 5400 // 1 hora y media
+    maxDurationSeconds: 6300 // 1 hora y 45 mint
   }
 };
 
-// ---- ENDPOINT: listado de zonas (incluye color) ----
-app.get('/v1/onstreet-service/zones', (req, res) => {
-  // Devuelve todas las zonas en formato { id, name, color }
-  const allZones = Object.entries(zonas).map(([id, zona]) => ({
-    id,
-    name: zona.name,
-    color: zona.color
-  }));
-  res.json(allZones);
-});
-
-// --- Endpoint de productos/tarifas por zona ---
 app.get('/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate', (req, res) => {
   const { zoneId, plate } = req.params;
   const zona = zonas[zoneId];
 
-  if (!zona) return res.json([]);
+  if (!zona) {
+    return res.json([]);
+  }
 
-  // Los steps son los bloques válidos
+  // Los steps son los bloques de tiempo/precio unitario
   const steps = zona.bloques.map(bloque => ({
     ...bloque,
     endDateTime: new Date(new Date().getTime() + bloque.timeInSeconds * 1000).toISOString()
@@ -67,7 +50,6 @@ app.get('/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate', (req, res) 
       extensible: true,
       coldDownTime: 120,
       name: zona.name,
-      color: zona.color, // ¡AQUÍ!
       description: `${zona.name} - Tarifa por bloques`,
       rateSteps: {
         steps: steps,
