@@ -9,18 +9,18 @@ const zonas = {
   'blue': {
     name: 'Zona azul',
     bloques: [
-      { minutos: 3, timeInSeconds: 180, priceInCents: 20, commissionPriceInCents: 5 },
-      { minutos: 5, timeInSeconds: 300, priceInCents: 30, commissionPriceInCents: 10 },
-      { minutos: 15, timeInSeconds: 900, priceInCents: 250, commissionPriceInCents: 20 }
+      { minutos: 5, timeInSeconds: 180, priceInCents: 10, commissionPriceInCents: 5 },
+      { minutos: 10, timeInSeconds: 300, priceInCents: 15, commissionPriceInCents: 10 },
+      { minutos: 15, timeInSeconds: 900, priceInCents: 50, commissionPriceInCents: 20 }
     ],
     maxDurationSeconds: 7200 // 2 horas
   },
   'green': {
     name: 'Zona verde',
     bloques: [
-      { minutos: 3, timeInSeconds: 180, priceInCents: 35, commissionPriceInCents: 4 },
-      { minutos: 5, timeInSeconds: 300, priceInCents: 55, commissionPriceInCents: 8 },
-      { minutos: 15, timeInSeconds: 900, priceInCents: 120, commissionPriceInCents: 18 }
+      { minutos: 3, timeInSeconds: 180, priceInCents: 100, commissionPriceInCents: 4 },
+      { minutos: 5, timeInSeconds: 300, priceInCents: 200, commissionPriceInCents: 8 },
+      { minutos: 15, timeInSeconds: 900, priceInCents: 300, commissionPriceInCents: 18 }
     ],
     maxDurationSeconds: 6300 // 1 hora y 45 mint
   }
