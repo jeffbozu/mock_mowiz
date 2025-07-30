@@ -5,36 +5,50 @@ const PORT = 3000;
 
 app.use(cors());
 
+// --- Configuración de zonas y bloques ---
 const zonas = {
   'blue': {
     name: 'Zona azul',
     bloques: [
-      { minutos: 3, timeInSeconds: 180, priceInCents: 20, commissionPriceInCents: 5 },
-      { minutos: 5, timeInSeconds: 300, priceInCents: 25, commissionPriceInCents: 10 },
-      { minutos: 15, timeInSeconds: 900, priceInCents: 250, commissionPriceInCents: 20 }
+      { minutos: 5, timeInSeconds: 300, priceInCents: 20 },
+      { minutos: 10, timeInSeconds: 600, priceInCents: 35 },
+      { minutos: 15, timeInSeconds: 900, priceInCents: 45 },
+      { minutos: 30, timeInSeconds: 1800, priceInCents: 80 },
+      { minutos: 60, timeInSeconds: 3600, priceInCents: 150 }
     ],
     maxDurationSeconds: 7200 // 2 horas
   },
   'green': {
     name: 'Zona verde',
     bloques: [
-      { minutos: 3, timeInSeconds: 180, priceInCents: 30, commissionPriceInCents: 4 },
-      { minutos: 5, timeInSeconds: 300, priceInCents: 35, commissionPriceInCents: 8 },
-      { minutos: 15, timeInSeconds: 900, priceInCents: 350, commissionPriceInCents: 18 }
+      { minutos: 5, timeInSeconds: 300, priceInCents: 25 },
+      { minutos: 10, timeInSeconds: 600, priceInCents: 40 },
+      { minutos: 15, timeInSeconds: 900, priceInCents: 60 },
+      { minutos: 30, timeInSeconds: 1800, priceInCents: 100 },
+      { minutos: 60, timeInSeconds: 3600, priceInCents: 180 }
     ],
     maxDurationSeconds: 5400 // 1 hora y media
   }
 };
 
+// ---- Nuevo ENDPOINT: listado de zonas ----
+app.get('/v1/onstreet-service/zones', (req, res) => {
+  // Devuelve todas las zonas en formato { id, name }
+  const allZones = Object.entries(zonas).map(([id, zona]) => ({
+    id,
+    name: zona.name
+  }));
+  res.json(allZones);
+});
+
+// --- Endpoint de productos/tarifas por zona ---
 app.get('/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate', (req, res) => {
   const { zoneId, plate } = req.params;
   const zona = zonas[zoneId];
 
-  if (!zona) {
-    return res.json([]);
-  }
+  if (!zona) return res.json([]);
 
-  // Los steps son los bloques de tiempo/precio unitario
+  // Los steps son los bloques válidos
   const steps = zona.bloques.map(bloque => ({
     ...bloque,
     endDateTime: new Date(new Date().getTime() + bloque.timeInSeconds * 1000).toISOString()
