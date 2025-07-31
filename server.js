@@ -22,15 +22,15 @@ app.use(express.json());  // para POST /pay-ticket
 const zonas = {
   blue: {
     name  : 'Zona azul',
-    color : '#1891FF',
+    color : 'FF0000',
     bloques: [
-      { minutos: 5,  timeInSeconds:  300, priceInCents:  20 },
-      { minutos: 10, timeInSeconds:  600, priceInCents:  35 },
-      { minutos: 15, timeInSeconds:  900, priceInCents:  45 },
-      { minutos: 30, timeInSeconds: 1800, priceInCents:  80 },
-      { minutos: 60, timeInSeconds: 3600, priceInCents: 150 },
+      { minutos: 1,  timeInSeconds:  60, priceInCents:  40 },
+      { minutos: 2, timeInSeconds:  120, priceInCents:  55 },
+      { minutos: 25, timeInSeconds:  1500, priceInCents:  65 },
+      { minutos: 120, timeInSeconds: 7200, priceInCents:  90 },
+      { minutos: 180, timeInSeconds: 10800, priceInCents: 250 },
     ],
-    maxDurationSeconds: 7200,   // 2 h
+    maxDurationSeconds: 28800,   // 8 h
   },
   green: {
     name  : 'Zona verde',
