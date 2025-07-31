@@ -22,7 +22,7 @@ app.use(express.json());  // para POST /pay-ticket
 const zonas = {
   blue: {
     name  : 'Zona azul',
-    color : 'FF0000',
+    color : '#1891FF',
     bloques: [
       { minutos: 1,  timeInSeconds:  60, priceInCents:  40 },
       { minutos: 2, timeInSeconds:  120, priceInCents:  55 },
