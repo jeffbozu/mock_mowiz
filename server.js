@@ -12,7 +12,7 @@ const app      = express();
 const PORT     = process.env.PORT || 3000;
 
 /* ---- 1. URL por defecto (cambia y haz git push si quieres) ----- */
-const PUBLIC_URL_DEFAULT = 'https://tariff2.onrender.com';
+const PUBLIC_URL_DEFAULT = 'https://mock-mowiz.onrender.com';
 
 /* ---- 2. Middleware ------------------------------------------- */
 app.use(cors());
