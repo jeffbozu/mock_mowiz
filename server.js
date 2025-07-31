@@ -8,7 +8,7 @@ app.use(cors());
 // ---- Configuración de zonas y bloques ----
 const zonas = {
   'playa': {
-    name: 'Zona Playa',
+    name: 'Zona Coche',
     color: '#FFD600', // Amarillo
     bloques: [
       { minutos: 8,  timeInSeconds: 480,  priceInCents: 19 },
@@ -19,7 +19,7 @@ const zonas = {
     maxDurationSeconds: 7200 // 2 horas
   },
   'costa': {
-    name: 'Zona Costa',
+    name: 'Zona Moto',
     color: '#1891FF', // Azul
     bloques: [
       { minutos: 10, timeInSeconds: 600,  priceInCents: 24 },
@@ -30,7 +30,7 @@ const zonas = {
     maxDurationSeconds: 10800 // 3 horas
   },
   'parque': {
-    name: 'Zona Parque',
+    name: 'Zona Camión',
     color: '#9C27B0', // Morado
     bloques: [
       { minutos: 15, timeInSeconds: 900,  priceInCents: 20 },
