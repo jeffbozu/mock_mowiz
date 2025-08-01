@@ -21,16 +21,16 @@ app.use(express.json());  // para POST /pay-ticket
 /* ---- 3. Datos mock ------------------------------------------- */
 const zonas = {
   blue: {
-    name  : 'Zona azul',
-    color : '#1891FF',
+    name  : 'Zona rosa',
+    color : '#FF0080',
     bloques: [
-      { minutos: 1,  timeInSeconds:  60, priceInCents:  40 },
-      { minutos: 2, timeInSeconds:  120, priceInCents:  55 },
+      { minutos: 3,  timeInSeconds:  180, priceInCents:  80 },
+      { minutos: 10, timeInSeconds:  600, priceInCents:  90 },
       { minutos: 25, timeInSeconds:  1500, priceInCents:  65 },
       { minutos: 120, timeInSeconds: 7200, priceInCents:  90 },
       { minutos: 180, timeInSeconds: 10800, priceInCents: 250 },
     ],
-    maxDurationSeconds: 28800,   // 8 h
+    maxDurationSeconds: 3600,   // 1 h
   },
   green: {
     name  : 'Zona verde',
