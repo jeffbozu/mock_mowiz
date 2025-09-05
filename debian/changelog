@@ -1,0 +1,14 @@
+kioskapp (1.0.0-1) unstable; urgency=medium
+
+  * Initial release
+  * Flutter-based kiosk application for parking management
+  * Automatic thermal printer detection via serial port
+  * Integrated printer-agent service for ESC/POS printing
+  * Zero-configuration installation
+
+ -- KioskApp Team <team@kioskapp.com>  $(date -R)
+
+
+
+
+

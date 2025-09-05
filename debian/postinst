@@ -1,0 +1,181 @@
+#!/bin/bash
+set -e
+
+# Script postinst para kioskapp
+# Se ejecuta automáticamente después de instalar el paquete
+
+APP_DIR="/opt/kioskapp"
+PRINTER_AGENT_DIR="$APP_DIR/printer-agent"
+QR_SCANNER_DIR="$APP_DIR/qr-scanner-agent"
+SERVICE_NAME="printer-agent.service"
+QR_SCANNER_SERVICE="qr-scanner-agent.service"
+USER_NAME="kiosk"
+
+echo "Configurando KioskApp..."
+
+# Crear usuario kiosk si no existe
+if ! id "$USER_NAME" &>/dev/null; then
+    useradd -m -s /bin/bash "$USER_NAME"
+    echo "Usuario $USER_NAME creado"
+fi
+
+# Asegurar permisos en la app
+chown -R "$USER_NAME":"$USER_NAME" "$APP_DIR"
+
+# Instalar printer-agent automáticamente
+if [ -d "$PRINTER_AGENT_DIR" ]; then
+    echo "Instalando printer-agent..."
+    
+    # Instalar dependencias del sistema
+    apt-get update
+    apt-get install -y python3-venv python3-pip libusb-1.0-0
+    
+    # Añadir usuario al grupo dialout para acceso a puertos serie
+    usermod -aG dialout "$USER_NAME" || true
+    
+    # Crear venv e instalar dependencias Python
+    sudo -u "$USER_NAME" bash -c "cd '$PRINTER_AGENT_DIR' && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt"
+    
+    # Crear servicio systemd para printer-agent
+    cat >/etc/systemd/system/$SERVICE_NAME <<EOF
+[Unit]
+Description=Printer Agent for KioskApp
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=$PRINTER_AGENT_DIR
+Environment=PRINTER_BIND=127.0.0.1
+Environment=PRINTER_PORT=9101
+ExecStart=$PRINTER_AGENT_DIR/.venv/bin/python server.py
+Restart=always
+User=$USER_NAME
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    echo "Printer-agent instalado y configurado"
+fi
+
+# Instalar qr-scanner-agent automáticamente
+if [ -d "$QR_SCANNER_DIR" ]; then
+    echo "Instalando qr-scanner-agent..."
+    
+    # Instalar dependencias del sistema para detección USB
+    echo "Instalando dependencias para escáner QR..."
+    apt-get update
+    apt-get install -y \
+        python3-dev \
+        libudev-dev \
+        libevdev-dev \
+        libinput-dev \
+        libusb-1.0-0-dev \
+        libhidapi-dev \
+        libusb-dev \
+        udev \
+        usbutils \
+        hwdata
+    
+    # Crear venv e instalar dependencias Python
+    sudo -u "$USER_NAME" bash -c "cd '$QR_SCANNER_DIR' && python3 -m venv .venv && . .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt"
+    
+    # Crear servicio systemd para qr-scanner-agent
+    cat >/etc/systemd/system/$QR_SCANNER_SERVICE <<EOF
+[Unit]
+Description=QR Scanner Agent for KioskApp
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=$QR_SCANNER_DIR
+Environment=QR_SCANNER_BIND=127.0.0.1
+Environment=QR_SCANNER_PORT=9102
+Environment=PYTHONPATH=$QR_SCANNER_DIR/.venv/lib/python3.9/site-packages
+ExecStart=$QR_SCANNER_DIR/.venv/bin/python server.py
+Restart=always
+RestartSec=5
+User=$USER_NAME
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    echo "QR Scanner Agent instalado y configurado"
+fi
+
+# Instalar reglas udev para permisos USB/Serial
+install -m 0644 "$PRINTER_AGENT_DIR/udev/99-escpos.rules" /etc/udev/rules.d/99-escpos.rules
+cat >/etc/udev/rules.d/99-serial.rules <<EOF
+KERNEL=="ttyUSB*", MODE:="0666"
+KERNEL=="ttyACM*", MODE:="0666"
+EOF
+
+# Reglas udev para escáneres QR USB (HID)
+cat >/etc/udev/rules.d/99-qr-scanner.rules <<EOF
+# Reglas para escáneres QR USB
+SUBSYSTEM=="usb", ATTR{idVendor}=="*", ATTR{idProduct}=="*", MODE:="0666"
+SUBSYSTEM=="input", KERNEL=="event*", MODE:="0666"
+SUBSYSTEM=="hidraw", MODE:="0666"
+
+# Reglas específicas para escáneres comunes
+# Honeywell
+SUBSYSTEM=="usb", ATTR{idVendor}=="0525", MODE:="0666"
+# Symbol/Zebra
+SUBSYSTEM=="usb", ATTR{idVendor}=="05e0", MODE:="0666"
+# Datalogic
+SUBSYSTEM=="usb", ATTR{idVendor}=="05f9", MODE:="0666"
+# Cognex
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b37", MODE:="0666"
+# Keyence
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b4e", MODE:="0666"
+# Omron
+SUBSYSTEM=="usb", ATTR{idVendor}=="0590", MODE:="0666"
+# Generic HID devices
+SUBSYSTEM=="usb", ATTR{idVendor}=="*", ATTR{idProduct}=="*", ATTR{bInterfaceClass}=="03", MODE:="0666"
+EOF
+
+# Recargar reglas udev
+udevadm control --reload-rules
+udevadm trigger
+
+# Habilitar y arrancar los servicios
+systemctl daemon-reload
+
+if [ -d "$PRINTER_AGENT_DIR" ]; then
+    systemctl enable --now $SERVICE_NAME
+fi
+
+if [ -d "$QR_SCANNER_DIR" ]; then
+    systemctl enable --now $QR_SCANNER_SERVICE
+fi
+
+# Crear enlaces simbólicos para fácil acceso
+ln -sf "$APP_DIR/kioskapp" /usr/local/bin/kioskapp || true
+
+# Configurar permisos de ejecución
+chmod +x "$APP_DIR/kioskapp"
+
+echo "KioskApp instalado correctamente"
+echo "Servicios activos:"
+if [ -d "$PRINTER_AGENT_DIR" ]; then
+    echo "  - printer-agent (puerto 9101)"
+fi
+if [ -d "$QR_SCANNER_DIR" ]; then
+    echo "  - qr-scanner-agent (puerto 9102)"
+fi
+echo ""
+echo "Para verificar servicios:"
+echo "  systemctl status printer-agent"
+echo "  systemctl status qr-scanner-agent"
+echo ""
+echo "Para probar:"
+echo "  curl 
+http://127.0.0.1:9101/v1/health"
+echo "  curl http://127.0.0.1:9102/v1/health"
+echo ""
+echo "Conecta impresora serie y escáner QR USB - se detectarán automáticamente!"
+
+exit 0

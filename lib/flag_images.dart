@@ -1,0 +1,19 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+final Uint8List flagEs = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAADwAAAAoCAIAAAAt2Q6oAAAAVUlEQVR4nO3XwQkAIBDEQBX7b1l78BEJ'
+    'JBUM+zlunuFr/Qa8FJoqNFVoqtBUewhPonLp0FShqUJThaYKTRWaKjRVaKrQVEr0FP61zqVDU4WmCk2l'
+    'RF9ORANO3ev6PQAAAABJRU5ErkJggg==');
+
+final Uint8List flagCt = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAADwAAAAoCAIAAAAt2Q6oAAAAV0lEQVR4nO3V0QnAIBAFQQ3pv2XtIR8T'
+    'DnYqWA7x7bPmef4O+KJopWjlXQO/j5GXLlrZA5/0zEsXrRSttIhK0UqLqBStFK20iErRSouoFK0UrbSI'
+    'StHKBbewCE0xv/jvAAAAAElFTkSuQmCC');
+
+final Uint8List flagUk = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAADwAAAAoCAIAAAAt2Q6oAAAA1klEQVR4nNWYQRLCIBAEey3//+XxoGgS'
+    'yEUxRc+NA6HTVJYlFWYnAagaD2fkNvFZFyURQvtMJ/igARl0XlVDBQ1AlQg6n+LsgQZauZdAZ3cGSqCB'
+    'zalqgM6x1TBAA/vmZXnoTjMCaKDrEdeGHmlmdWhg1Irfz95mcn5YpZ8qMN2nLvE8OUrTSui/fYiH2/jU'
+    'SE1P/SMBJ2q/XiXpZztMHzwsDz3aouWhW7ayDdCdbAN0y1u2BHovWwLd8pTtgd7I9kC3JC7oJlsF3WKD'
+    'rsIHDSihq4TQ8AArMS5NSctvmwAAAABJRU5ErkJggg==');

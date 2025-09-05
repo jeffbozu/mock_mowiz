@@ -1,0 +1,12 @@
+# Reglas udev para impresoras térmicas ESC/POS comunes
+# Ajusta/añade VID/PID específicos si tu modelo no está en la lista.
+
+SUBSYSTEM=="usb", ATTR{idVendor}=="0fe6", MODE="0666"   # Xprinter genérico
+SUBSYSTEM=="usb", ATTR{idVendor}=="0416", MODE="0666"   # Nuvoton/Winbond base
+SUBSYSTEM=="usb", ATTR{idVendor}=="04b8", MODE="0666"   # Epson TM
+
+
+
+
+
+

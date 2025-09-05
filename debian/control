@@ -1,0 +1,20 @@
+Package: kioskapp
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Depends: libc6 (>= 2.31), libgtk-3-0 (>= 3.24.0), libx11-6, libxcomposite1, libxcursor1, libxdamage1, libxext6, libxfixes3, libxi6, libxrandr2, libxrender1, libxss1, libxtst6, libnss3, libcups2, libasound2, libpulse0, libdrm2, libxcb-dri3-0, libxkbcommon0, libatspi2.0-0, libxshmfence1, libxcb1, libxrandr2, libxcomposite1, libxcursor1, libxdamage1, libxext6, libxfixes3, libxi6, libxrender1, libxss1, libxtst6, libnss3, libcups2, libasound2, libpulse0, libdrm2, libxcb-dri3-0, libxkbcommon0, libatspi2.0-0, libxshmfence1, python3-venv, python3-pip, libusb-1.0-0
+Maintainer: KioskApp Team <team@kioskapp.com>
+Description: Kiosk App with automatic printer and QR scanner detection
+ A Flutter-based kiosk application for parking management
+ with automatic thermal printer detection via serial port
+ and QR scanner detection via USB.
+ 
+ Features:
+ - Automatic thermal printer detection (serial port)
+ - Automatic QR scanner detection (USB HID)
+ - QR code discount system (format: -20, -5, etc.)
+ - ESC/POS printing with reduced QR codes
+ - Systemd services for printer-agent and qr-scanner-agent
+ - Udev rules for automatic device permissions
+ - Plug & play installation - just connect hardware and it works!

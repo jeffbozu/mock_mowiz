@@ -1,0 +1,45 @@
+#!/bin/bash
+set -e
+
+# Script postrm para kioskapp
+# Se ejecuta después de desinstalar el paquete
+
+SERVICE_NAME="printer-agent.service"
+USER_NAME="kiosk"
+
+echo "Limpiando KioskApp..."
+
+# Eliminar archivos del servicio systemd
+rm -f /etc/systemd/system/$SERVICE_NAME
+
+# Eliminar reglas udev específicas
+rm -f /etc/udev/rules.d/99-escpos.rules
+rm -f /etc/udev/rules.d/99-serial.rules
+
+# Recargar systemd y udev
+systemctl daemon-reload
+udevadm control --reload-rules
+
+# Eliminar enlaces simbólicos
+rm -f /usr/local/bin/kioskapp
+
+# Eliminar directorio de la app si está vacío
+if [ -d "/opt/kioskapp" ] && [ -z "$(ls -A /opt/kioskapp)" ]; then
+    rmdir /opt/kioskapp
+fi
+
+# Eliminar usuario kiosk si no tiene otros archivos
+if id "$USER_NAME" &>/dev/null; then
+    if [ ! -d "/home/$USER_NAME" ] || [ -z "$(ls -A /home/$USER_NAME)" ]; then
+        userdel "$USER_NAME" 2>/dev/null || true
+    fi
+fi
+
+echo "Limpieza completada"
+
+exit 0
+
+
+
+
+
