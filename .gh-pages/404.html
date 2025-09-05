@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Base href para despliegues en subcarpetas (Flutter reemplaza esta variable en build) -->
+  <base href="/kiosk_app/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Meypar Optima App">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Meypar Optima App">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="icons/favicon.png"/>
+
+  <title>Meypar Optima App</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- jsQR para decodificar QR desde la cámara en web -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+  <!-- Firebase JS SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* Contenedor del splash full-screen */
+    #splash {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease-out;
+    }
+
+    /* Oculta el splash con fundido */
+    #splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Animación de "latido" (pulse) */
+    @keyframes pulse {
+      0%   { transform: scale(1);      opacity: 1; }
+      50%  { transform: scale(1.1);    opacity: 0.8; }
+      100% { transform: scale(1);      opacity: 1; }
+    }
+
+    /* Aplica la animación al logo */
+    #splash img {
+      width: 200px;
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <!-- Splash screen: logo centrado con animación -->
+  <div id="splash">
+    <img src="icons/favicon.png" alt="Logo Meypar Optima">
+  </div>
+
+  <!-- Bootstrap de Flutter -->
+  <script src="flutter_bootstrap.js" async></script>
+
+  <!-- Al primer frame de Flutter, oculta el splash -->
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      const splash = document.getElementById('splash');
+      splash.classList.add('hidden');
+      splash.addEventListener('transitionend', () => splash.remove());
+    });
+  </script>
+</body>
+</html>
