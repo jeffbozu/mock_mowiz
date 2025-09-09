@@ -56,8 +56,30 @@ const createTransporter = (provider, email, password) => {
       secure: false,
       auth: { user: email, pass: password },
       tls: {
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false,
+        ciphers: 'SSLv3'
+      },
+      connectionTimeout: 60000,
+      greetingTimeout: 30000,
+      socketTimeout: 60000
+    },
+    corporate: {
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: { user: email, pass: password },
+      tls: {
+        rejectUnauthorized: false,
+        ciphers: 'SSLv3'
+      },
+      connectionTimeout: 60000,
+      greetingTimeout: 30000,
+      socketTimeout: 60000,
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      rateDelta: 20000,
+      rateLimit: 5
     },
     custom: {
       host: process.env.SMTP_HOST,
@@ -92,9 +114,17 @@ const detectEmailProvider = (recipientEmail) => {
     return domainMap[domain];
   }
   
-  // Para dominios corporativos desconocidos, usar Gmail como fallback
-  // Esto funciona porque Gmail puede entregar a cualquier dominio
-  console.log(`🔄 Dominio corporativo desconocido: ${domain}, usando Gmail como fallback`);
+  // Detectar si es un dominio corporativo (no es un proveedor público conocido)
+  const publicDomains = ['gmail.com', 'googlemail.com', 'hotmail.com', 'outlook.com', 'live.com', 'yahoo.com', 'aol.com'];
+  const isCorporateDomain = !publicDomains.includes(domain) && domain.includes('.');
+  
+  if (isCorporateDomain) {
+    console.log(`🏢 Dominio corporativo detectado: ${domain}, usando configuración corporativa`);
+    return 'corporate';
+  }
+  
+  // Para otros casos, usar Gmail como fallback
+  console.log(`🔄 Dominio desconocido: ${domain}, usando Gmail como fallback`);
   return 'gmail';
 };
 
@@ -399,12 +429,21 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       });
     }
 
-    // Validar email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Validar email con regex más estricto para correos corporativos
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!emailRegex.test(recipientEmail)) {
       return res.status(400).json({
         success: false,
         error: 'Email de destinatario inválido'
+      });
+    }
+
+    // Validación adicional para correos corporativos
+    const domain = recipientEmail.split('@')[1]?.toLowerCase();
+    if (!domain || domain.length < 3) {
+      return res.status(400).json({
+        success: false,
+        error: 'Dominio de email inválido'
       });
     }
 
@@ -464,7 +503,7 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     const pdfBuffer = await generateTicketPDF(ticketData, locale);
     console.log('🧾 PDF generado. Tamaño:', pdfBuffer?.length, 'bytes');
 
-    // Configurar email con PDF adjunto
+    // Configurar email con PDF adjunto - optimizado para correos corporativos
     const mailOptions = {
       from: `"Meypark NoReply" <${fromEmail}>`,
       replyTo: 'noreply@meypark.com',
@@ -472,6 +511,22 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       subject: subject,
       html: htmlContent,
       text: `${t.title}\n\n${t.plate}: ${plate}\n${t.zone}: ${zone}\n${t.startTime}: ${start}\n${t.endTime}: ${end}\n${t.price}: ${price}€\n${t.method}: ${method}`,
+      // Headers adicionales para mejorar la entrega a correos corporativos
+      headers: {
+        'X-Priority': '3',
+        'X-MSMail-Priority': 'Normal',
+        'X-Mailer': 'Meypark Ticket System',
+        'X-Originating-IP': '[127.0.0.1]',
+        'Return-Path': fromEmail,
+        'Message-ID': `<${Date.now()}.${Math.random().toString(36).substr(2, 9)}@meypark.com>`,
+        'List-Unsubscribe': '<mailto:unsubscribe@meypark.com>',
+        'X-Auto-Response-Suppress': 'All'
+      },
+      // Configuración adicional para correos corporativos
+      envelope: {
+        from: fromEmail,
+        to: recipientEmail
+      },
       attachments: [
         // Adjuntar QR como imagen inline si existe
         ...(qrImageBuffer ? [{
@@ -530,16 +585,30 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       provider: emailProvider
     }));
     
-    // Manejar errores específicos
+    // Manejar errores específicos - mejorado para correos corporativos
     let errorMessage = 'Error interno del servidor';
     if (error.code === 'EAUTH') {
       errorMessage = 'Credenciales de email incorrectas';
     } else if (error.code === 'ENOTFOUND') {
       errorMessage = 'Error de conexión con el servidor de email';
     } else if (error.responseCode === 550) {
-      errorMessage = 'Email de destinatario inválido o bloqueado';
+      errorMessage = 'Email de destinatario inválido o bloqueado por el servidor corporativo';
     } else if (error.responseCode === 554) {
-      errorMessage = 'Email rechazado por el servidor de destino';
+      errorMessage = 'Email rechazado por el servidor de destino (posible filtro corporativo)';
+    } else if (error.responseCode === 421) {
+      errorMessage = 'Servidor temporalmente no disponible, intente más tarde';
+    } else if (error.responseCode === 450) {
+      errorMessage = 'Buzón de correo temporalmente no disponible';
+    } else if (error.responseCode === 451) {
+      errorMessage = 'Error temporal del servidor, intente más tarde';
+    } else if (error.responseCode === 452) {
+      errorMessage = 'Sistema de correo sobrecargado, intente más tarde';
+    } else if (error.responseCode === 553) {
+      errorMessage = 'Dirección de correo no válida o no permitida';
+    } else if (error.code === 'ECONNREFUSED') {
+      errorMessage = 'Conexión rechazada por el servidor de correo';
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage = 'Timeout de conexión con el servidor de correo';
     }
 
     res.status(500).json({
