@@ -85,10 +85,18 @@ const detectEmailProvider = (recipientEmail) => {
     'outlook.com': 'outlook',
     'live.com': 'hotmail',
     'meypar.com': 'meypar',
-    // Agregar más dominios corporativos según sea necesario
+    // Agregar más dominios corporativos específicos aquí si es necesario
   };
   
-  return domainMap[domain] || 'custom';
+  // Si el dominio está en el mapa, usar esa configuración
+  if (domainMap[domain]) {
+    return domainMap[domain];
+  }
+  
+  // Para dominios corporativos desconocidos, usar Gmail como fallback
+  // Esto funciona porque Gmail puede entregar a cualquier dominio
+  console.log(`🔄 Dominio corporativo desconocido: ${domain}, usando Gmail como fallback`);
+  return 'gmail';
 };
 
 // Función para generar QR como base64
