@@ -100,12 +100,13 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.post('/whatsapp/send', async (req, res) => {
   try {
     if (!client) return res.status(500).json({ ok: false, error: 'Twilio no configurado' });
-    const { phone, message, ticket, locale = 'es' } = req.body || {};
+    const { phone, message, ticket, locale = 'es', localeCode } = req.body || {};
+    const actualLocale = localeCode || locale;
     const to = toE164(phone);
     if (!to) return res.status(400).json({ ok: false, error: 'Teléfono inválido' });
     
     // Extraer idioma del locale (es_ES -> es, ca_ES -> ca, en_US -> en)
-    const lang = locale.split('_')[0] || 'es';
+    const lang = actualLocale.split('_')[0] || 'es';
     const body = message || formatMessage(ticket || {}, lang);
     
     console.log(`📱 WhatsApp - Enviando mensaje en idioma: ${lang}`);
