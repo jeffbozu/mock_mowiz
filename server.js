@@ -50,6 +50,16 @@ const createTransporter = (provider, email, password) => {
       service: 'outlook',
       auth: { user: email, pass: password }
     },
+    meypar: {
+      host: 'mail.meypar.com',
+      port: 587,
+      secure: false,
+      auth: { user: email, pass: password },
+      tls: {
+        ciphers: 'SSLv3',
+        rejectUnauthorized: false
+      }
+    },
     custom: {
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT || 587,
@@ -59,6 +69,26 @@ const createTransporter = (provider, email, password) => {
   };
   
   return nodemailer.createTransport(configs[provider] || configs.gmail);
+};
+
+// Función para detectar automáticamente el proveedor basado en el dominio del destinatario
+const detectEmailProvider = (recipientEmail) => {
+  const domain = recipientEmail.split('@')[1]?.toLowerCase();
+  
+  if (!domain) return 'gmail';
+  
+  // Mapeo de dominios a proveedores
+  const domainMap = {
+    'gmail.com': 'gmail',
+    'googlemail.com': 'gmail',
+    'hotmail.com': 'hotmail',
+    'outlook.com': 'outlook',
+    'live.com': 'hotmail',
+    'meypar.com': 'meypar',
+    // Agregar más dominios corporativos según sea necesario
+  };
+  
+  return domainMap[domain] || 'custom';
 };
 
 // Función para generar QR como base64
@@ -371,10 +401,13 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       });
     }
 
+    // Detectar proveedor automáticamente basado en el destinatario
+    const detectedProvider = detectEmailProvider(recipientEmail);
+    
     // Usar credenciales del request o variables de entorno (fallback a GMAIL_*)
     const fromEmail = senderEmail || process.env.EMAIL_USER || process.env.GMAIL_EMAIL;
     const fromPassword = senderPassword || process.env.EMAIL_PASSWORD || process.env.GMAIL_PASSWORD;
-    const emailProvider = provider || process.env.EMAIL_PROVIDER || 'gmail';
+    const emailProvider = provider || detectedProvider;
 
     if (!fromEmail || !fromPassword) {
       return res.status(500).json({
@@ -451,6 +484,7 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
 
     // Enviar email
     console.log('📤 Enviando email vía', emailProvider, 'como', fromEmail, 'a', recipientEmail);
+    console.log('🔧 Proveedor detectado automáticamente:', detectedProvider, 'para dominio:', recipientEmail.split('@')[1]);
     const info = await transporter.sendMail(mailOptions);
     
     console.log(`✅ Email enviado exitosamente a: ${recipientEmail}`);
