@@ -14,7 +14,14 @@ const PORT = process.env.PORT || 4000;
 // Middlewares de seguridad
 app.use(helmet());
 app.use(cors({
-  origin: true, // Permitir todos los orígenes localhost para desarrollo
+  origin: [
+    'https://jeffbozu.github.io',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:8080'
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
