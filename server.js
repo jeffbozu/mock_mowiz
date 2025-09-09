@@ -15,7 +15,17 @@ const PORT     = process.env.PORT || 3001;
 const PUBLIC_URL_DEFAULT = 'https://mock-mowiz.onrender.com';
 
 /* ---- 2. Middleware ------------------------------------------- */
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://jeffbozu.github.io',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:8080'
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());          // body-parser para /pay-ticket
 
 /* ---- 3. Datos mock (Zonas + bloques + colores) ---------------- */
