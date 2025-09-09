@@ -32,29 +32,66 @@ function toE164(phone) {
   return `+34${digits}`; // por defecto ES
 }
 
-function formatMessage(ticket = {}) {
+function formatMessage(ticket = {}, locale = 'es') {
   const lines = [];
-  lines.push('🎫 *Ticket de Estacionamiento*');
+  
+  // Traducciones por idioma
+  const translations = {
+    es: {
+      title: '🎫 *Ticket de Estacionamiento*',
+      plate: '🚙 Matrícula',
+      zone: '📍 Zona',
+      start: '🕐 Inicio',
+      end: '🕙 Fin',
+      duration: '⏱️ Duración',
+      method: '💳 Pago',
+      price: '💰 Importe',
+      discount: '🏷️ Descuento',
+      thanks: '✅ Gracias por su compra.'
+    },
+    ca: {
+      title: '🎫 *Tiquet d\'Estacionament*',
+      plate: '🚙 Matrícula',
+      zone: '📍 Zona',
+      start: '🕐 Inici',
+      end: '🕙 Fi',
+      duration: '⏱️ Durada',
+      method: '💳 Pagament',
+      price: '💰 Import',
+      discount: '🏷️ Descompte',
+      thanks: '✅ Gràcies per la seva compra.'
+    },
+    en: {
+      title: '🎫 *Parking Ticket*',
+      plate: '🚙 Plate',
+      zone: '📍 Zone',
+      start: '🕐 Start',
+      end: '🕙 End',
+      duration: '⏱️ Duration',
+      method: '💳 Payment',
+      price: '💰 Amount',
+      discount: '🏷️ Discount',
+      thanks: '✅ Thank you for your purchase.'
+    }
+  };
+  
+  const t = translations[locale] || translations.es;
+  
+  lines.push(t.title);
   lines.push('');
-  if (ticket.plate) lines.push(`🚙 Matrícula: *${ticket.plate}*`);
-  if (ticket.zone) lines.push(`📍 Zona: ${ticket.zone}`);
-  if (ticket.start) lines.push(`🕐 Inicio: ${ticket.start}`);
-  if (ticket.end) lines.push(`🕙 Fin: ${ticket.end}`);
-  if (ticket.duration) lines.push(`⏱️ Duración: ${ticket.duration}`);
-  if (ticket.method) lines.push(`💳 Pago: ${ticket.method}`);
-  if (typeof ticket.price === 'number') lines.push(`💰 Importe: ${ticket.price.toFixed(2)} €`);
+  if (ticket.plate) lines.push(`${t.plate}: *${ticket.plate}*`);
+  if (ticket.zone) lines.push(`${t.zone}: ${ticket.zone}`);
+  if (ticket.start) lines.push(`${t.start}: ${ticket.start}`);
+  if (ticket.end) lines.push(`${t.end}: ${ticket.end}`);
+  if (ticket.duration) lines.push(`${t.duration}: ${ticket.duration}`);
+  if (ticket.method) lines.push(`${t.method}: ${ticket.method}`);
+  if (typeof ticket.price === 'number') lines.push(`${t.price}: ${ticket.price.toFixed(2)} €`);
   if (typeof ticket.discount === 'number' && ticket.discount > 0) {
-    lines.push(`🏷️ Descuento: -${ticket.discount.toFixed(2)} €`);
+    lines.push(`${t.discount}: -${ticket.discount.toFixed(2)} €`);
   }
-  if (ticket.qrData) {
-    lines.push('');
-    lines.push('📱 QR / Verificación:');
-    lines.push('```');
-    lines.push(String(ticket.qrData));
-    lines.push('```');
-  }
+  // QR data removed as requested
   lines.push('');
-  lines.push('✅ Gracias por su compra.');
+  lines.push(t.thanks);
   return lines.join('\n');
 }
 
@@ -63,10 +100,17 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.post('/whatsapp/send', async (req, res) => {
   try {
     if (!client) return res.status(500).json({ ok: false, error: 'Twilio no configurado' });
-    const { phone, message, ticket } = req.body || {};
+    const { phone, message, ticket, locale = 'es' } = req.body || {};
     const to = toE164(phone);
     if (!to) return res.status(400).json({ ok: false, error: 'Teléfono inválido' });
-    const body = message || formatMessage(ticket || {});
+    
+    // Extraer idioma del locale (es_ES -> es, ca_ES -> ca, en_US -> en)
+    const lang = locale.split('_')[0] || 'es';
+    const body = message || formatMessage(ticket || {}, lang);
+    
+    console.log(`📱 WhatsApp - Enviando mensaje en idioma: ${lang}`);
+    console.log(`📱 WhatsApp - Contenido: ${body.substring(0, 100)}...`);
+    
     const result = await client.messages.create({
       from: TWILIO_WHATSAPP_FROM,
       to: to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
