@@ -4,7 +4,17 @@ const cors = require('cors');
 const Twilio = require('twilio');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://jeffbozu.github.io',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:8080'
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
