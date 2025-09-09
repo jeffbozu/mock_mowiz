@@ -51,12 +51,11 @@ const createTransporter = (provider, email, password) => {
       auth: { user: email, pass: password }
     },
     meypar: {
-      host: 'mail.meypar.com',
+      host: 'smtp.gmail.com',
       port: 587,
       secure: false,
       auth: { user: email, pass: password },
       tls: {
-        ciphers: 'SSLv3',
         rejectUnauthorized: false
       }
     },
