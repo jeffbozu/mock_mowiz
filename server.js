@@ -492,7 +492,22 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     // Enviar email
     console.log('📤 Enviando email vía', emailProvider, 'como', fromEmail, 'a', recipientEmail);
     console.log('🔧 Proveedor detectado automáticamente:', detectedProvider, 'para dominio:', recipientEmail.split('@')[1]);
+    console.log('🔧 Configuración SMTP usada:', JSON.stringify({
+      provider: emailProvider,
+      host: transporter.options?.host || transporter.options?.service,
+      port: transporter.options?.port,
+      secure: transporter.options?.secure
+    }));
+    
     const info = await transporter.sendMail(mailOptions);
+    
+    console.log('✅ SMTP Response:', JSON.stringify({
+      messageId: info.messageId,
+      response: info.response,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      pending: info.pending
+    }));
     
     console.log(`✅ Email enviado exitosamente a: ${recipientEmail}`);
     console.log(`📧 Message ID: ${info.messageId}`);
@@ -505,6 +520,15 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error enviando email:', error);
+    console.error('❌ Error details:', JSON.stringify({
+      code: error.code,
+      responseCode: error.responseCode,
+      response: error.response,
+      command: error.command,
+      message: error.message,
+      recipient: recipientEmail,
+      provider: emailProvider
+    }));
     
     // Manejar errores específicos
     let errorMessage = 'Error interno del servidor';
@@ -514,12 +538,20 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       errorMessage = 'Error de conexión con el servidor de email';
     } else if (error.responseCode === 550) {
       errorMessage = 'Email de destinatario inválido o bloqueado';
+    } else if (error.responseCode === 554) {
+      errorMessage = 'Email rechazado por el servidor de destino';
     }
 
     res.status(500).json({
       success: false,
       error: errorMessage,
-      details: error && (error.stack || error.message || String(error))
+      details: error && (error.stack || error.message || String(error)),
+      debugInfo: {
+        recipient: recipientEmail,
+        provider: emailProvider,
+        errorCode: error.code,
+        responseCode: error.responseCode
+      }
     });
   }
 });
