@@ -110,6 +110,7 @@ app.post('/whatsapp/send', async (req, res) => {
     const body = message || formatMessage(ticket || {}, lang);
     
     console.log(`📱 WhatsApp - Enviando mensaje en idioma: ${lang}`);
+    console.log(`📱 WhatsApp - Locale recibido: ${actualLocale}`);
     console.log(`📱 WhatsApp - Contenido: ${body.substring(0, 100)}...`);
     
     const result = await client.messages.create({
@@ -125,5 +126,5 @@ app.post('/whatsapp/send', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🚀 WhatsApp server on :${PORT} - Language fix v2 deployed`));
+app.listen(PORT, () => console.log(`🚀 WhatsApp server on :${PORT} - Language fix v3 deployed - Timezone fix applied`));
 
