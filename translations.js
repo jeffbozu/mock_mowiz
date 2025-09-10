@@ -1,21 +1,17 @@
 // Traducciones y funciones de formateo para el servidor de email
 
-// Función para formatear fecha y hora en formato 24h usando la hora local
+// Función para formatear fecha y hora en formato 24h - SIN conversión de zona horaria
 const formatDateTime = (date, locale = 'es') => {
   const d = new Date(date);
   
-  // Usar toLocaleString sin zona horaria para mantener la hora local
-  const options = {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false, // Formato 24h
-    // Sin timeZone para usar la hora local del servidor
-  };
+  // Formatear directamente sin conversión de zona horaria para mantener la hora exacta
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
   
-  return d.toLocaleString('es-ES', options);
+  return `${day}/${month}/${year}, ${hours}:${minutes}`;
 };
 
 // Función para formatear duración
