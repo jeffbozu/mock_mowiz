@@ -125,6 +125,5 @@ app.post('/whatsapp/send', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🚀 WhatsApp server on :${PORT}`));
-
+app.listen(PORT, () => console.log(`🚀 WhatsApp server on :${PORT} - Language fix v2 deployed`));
 
