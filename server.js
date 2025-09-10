@@ -166,7 +166,7 @@ const generateTicketHTML = async (ticketData, locale = 'es') => {
   const qrBase64 = qrData ? await generateQRBase64(qrData) : '';
 
   const t = getTranslations(locale);
-  const zoneName = zone === 'green' ? t.zoneGreen : zone === 'blue' ? t.zoneBlue : zone;
+  const zoneName = zone === 'green' ? t.zoneGreen : zone === 'blue' ? t.zoneBlue : zone === 'playa' ? t.zonePlaya : zone === 'costa' ? t.zoneCosta : zone === 'parque' ? t.zoneParque : zone;
   const methodName = t.methods[method] || method;
   const startFormatted = formatDateTime(start, locale);
   const endFormatted = formatDateTime(end, locale);
@@ -581,8 +581,8 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       response: error.response,
       command: error.command,
       message: error.message,
-      recipient: recipientEmail,
-      provider: emailProvider
+      recipient: req.body.recipientEmail || 'unknown',
+      provider: emailProvider || 'unknown'
     }));
     
     // Manejar errores específicos - mejorado para correos corporativos
