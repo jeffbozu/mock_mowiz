@@ -616,8 +616,8 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       error: errorMessage,
       details: error && (error.stack || error.message || String(error)),
       debugInfo: {
-        recipient: recipientEmail,
-        provider: emailProvider,
+        recipient: req.body.recipientEmail || 'unknown',
+        provider: req.body.provider || 'unknown',
         errorCode: error.code,
         responseCode: error.responseCode
       }
