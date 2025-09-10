@@ -4,20 +4,18 @@
 const formatDateTime = (date, locale = 'es') => {
   const d = new Date(date);
   
-  // Ajustar a zona horaria de España (UTC+1 en invierno, UTC+2 en verano)
-  // España está en UTC+1, pero necesitamos verificar si es horario de verano
-  const spainOffset = 1; // UTC+1 (España)
-  const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-  const spainTime = new Date(utc + (spainOffset * 3600000));
+  // Usar toLocaleString con zona horaria de España para obtener la hora correcta
+  const options = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false, // Formato 24h
+    timeZone: 'Europe/Madrid' // Zona horaria de España
+  };
   
-  // Formato 24h: DD/MM/YYYY HH:mm
-  const day = String(spainTime.getDate()).padStart(2, '0');
-  const month = String(spainTime.getMonth() + 1).padStart(2, '0');
-  const year = spainTime.getFullYear();
-  const hours = String(spainTime.getHours()).padStart(2, '0');
-  const minutes = String(spainTime.getMinutes()).padStart(2, '0');
-  
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
+  return d.toLocaleString('es-ES', options);
 };
 
 // Función para formatear duración
