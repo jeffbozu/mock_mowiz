@@ -310,7 +310,7 @@ const generateTicketHTML = async (ticketData, locale = 'es') => {
                 <span class="value">${duration}</span>
             </div>
             <div class="info-row">
-                <span class="label">💳 ${t.method}:</span>
+                <span class="label">💳 ${t.paymentMethod}:</span>
                 <span class="value">${methodName}</span>
             </div>
             ${discount && discount !== 0 ? `
@@ -322,7 +322,7 @@ const generateTicketHTML = async (ticketData, locale = 'es') => {
         </div>
         
         <div class="price-highlight">
-            💰 ${t.price}: ${price.toFixed(2)}€
+            💰 ${t.totalPrice}: ${price.toFixed(2)}€
         </div>
         
         
