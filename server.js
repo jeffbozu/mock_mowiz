@@ -582,7 +582,7 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       command: error.command,
       message: error.message,
       recipient: req.body.recipientEmail || 'unknown',
-      provider: emailProvider || 'unknown'
+      provider: req.body.provider || 'unknown'
     }));
     
     // Manejar errores específicos - mejorado para correos corporativos
