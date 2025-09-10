@@ -82,7 +82,7 @@ async function generateTicketPDF(ticketData, locale = 'es') {
           discount: t.discount,
           total: t.price,
           price: t.price,
-          method: t.method,
+          method: t.paymentMethod,
           scan: t.qrDescription,
           generated: t.footer,
         };
