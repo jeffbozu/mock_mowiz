@@ -762,22 +762,6 @@ app.post('/api/auto-reply', async (req, res) => {
   }
 });
 
-// Endpoint de configuración para la app Flutter
-const configResponse = JSON.stringify({
-  apiBaseUrl: 'https://mock-mowiz.onrender.com',
-  version: '1.0.0',
-  features: {
-    email: true,
-    whatsapp: true,
-    pdf: true
-  }
-});
-
-app.get('/v1/config', (req, res) => {
-  res.set('Content-Type', 'application/json');
-  res.send(configResponse);
-});
-
 // Endpoint de salud
 app.get('/health', (req, res) => {
   res.json({
@@ -794,7 +778,6 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     description: 'Servidor proxy para envío de emails de tickets de estacionamiento',
     endpoints: {
-      'GET /v1/config': 'Configuración para la app Flutter',
       'POST /api/send-email': 'Enviar email con ticket',
       'POST /api/auto-reply': 'Auto-respuesta para emails recibidos',
       'GET /health': 'Estado del servidor',
@@ -817,7 +800,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor de email iniciado en puerto ${PORT}`);
   console.log(`📧 Configurado para Gmail: ${process.env.GMAIL_EMAIL}`);
   console.log(`🌐 Endpoints disponibles:`);
-  console.log(`   - GET /v1/config`);
   console.log(`   - POST /api/send-email`);
   console.log(`   - POST /api/auto-reply`);
   console.log(`   - GET /health`);
