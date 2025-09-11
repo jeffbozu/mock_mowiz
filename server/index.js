@@ -1,9 +1,27 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const Twilio = require('twilio');
 
 const app = express();
+
+// Compresión gzip para reducir el tamaño de las respuestas
+app.use(compression());
+
+// Cache headers para respuestas estáticas
+app.use((req, res, next) => {
+  // Cache por 1 hora para configuración
+  if (req.path === '/v1/config') {
+    res.set('Cache-Control', 'public, max-age=3600');
+  }
+  // Cache por 5 minutos para endpoints de datos
+  if (req.path.includes('/whatsapp/')) {
+    res.set('Cache-Control', 'public, max-age=300');
+  }
+  next();
+});
+
 app.use(cors({
   origin: [
     'https://jeffbozu.github.io',
@@ -15,7 +33,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' })); // Límite reducido para WhatsApp
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -32,49 +50,48 @@ function toE164(phone) {
   return `+34${digits}`; // por defecto ES
 }
 
+// Cache de traducciones para evitar recrear objetos
+const translations = {
+  es: {
+    title: '🎫 *Ticket de Estacionamiento*',
+    plate: '🚙 Matrícula',
+    zone: '📍 Zona',
+    start: '🕐 Inicio',
+    end: '🕙 Fin',
+    duration: '⏱️ Duración',
+    method: '💳 Pago',
+    price: '💰 Importe',
+    discount: '🏷️ Descuento',
+    thanks: '✅ Gracias por su compra.'
+  },
+  ca: {
+    title: '🎫 *Tiquet d\'Estacionament*',
+    plate: '🚙 Matrícula',
+    zone: '📍 Zona',
+    start: '🕐 Inici',
+    end: '🕙 Fi',
+    duration: '⏱️ Durada',
+    method: '💳 Pagament',
+    price: '💰 Import',
+    discount: '🏷️ Descompte',
+    thanks: '✅ Gràcies per la seva compra.'
+  },
+  en: {
+    title: '🎫 *Parking Ticket*',
+    plate: '🚙 Plate',
+    zone: '📍 Zone',
+    start: '🕐 Start',
+    end: '🕙 End',
+    duration: '⏱️ Duration',
+    method: '💳 Payment',
+    price: '💰 Amount',
+    discount: '🏷️ Discount',
+    thanks: '✅ Thank you for your purchase.'
+  }
+};
+
 function formatMessage(ticket = {}, locale = 'es') {
   const lines = [];
-  
-  // Traducciones por idioma
-  const translations = {
-    es: {
-      title: '🎫 *Ticket de Estacionamiento*',
-      plate: '🚙 Matrícula',
-      zone: '📍 Zona',
-      start: '🕐 Inicio',
-      end: '🕙 Fin',
-      duration: '⏱️ Duración',
-      method: '💳 Pago',
-      price: '💰 Importe',
-      discount: '🏷️ Descuento',
-      thanks: '✅ Gracias por su compra.'
-    },
-    ca: {
-      title: '🎫 *Tiquet d\'Estacionament*',
-      plate: '🚙 Matrícula',
-      zone: '📍 Zona',
-      start: '🕐 Inici',
-      end: '🕙 Fi',
-      duration: '⏱️ Durada',
-      method: '💳 Pagament',
-      price: '💰 Import',
-      discount: '🏷️ Descompte',
-      thanks: '✅ Gràcies per la seva compra.'
-    },
-    en: {
-      title: '🎫 *Parking Ticket*',
-      plate: '🚙 Plate',
-      zone: '📍 Zone',
-      start: '🕐 Start',
-      end: '🕙 End',
-      duration: '⏱️ Duration',
-      method: '💳 Payment',
-      price: '💰 Amount',
-      discount: '🏷️ Discount',
-      thanks: '✅ Thank you for your purchase.'
-    }
-  };
-  
   const t = translations[locale] || translations.es;
   
   lines.push(t.title);
