@@ -118,11 +118,17 @@ async function generateTicketPDF(ticketData, locale = 'es') {
       
       // Descuento si existe
       if (discount && discount !== 0) {
-        buildInfoRow(getLabel('discount', locale), `${discount.toFixed(2)} €`);
+        const discountFormatted = locale.startsWith('es') || locale.startsWith('ca') 
+          ? `${discount.toFixed(2).replace('.', ',')} €`
+          : `${discount.toFixed(2)} €`;
+        buildInfoRow(getLabel('discount', locale), discountFormatted);
       }
       
       // Precio total - destacado como en Flutter
-      buildInfoRow(getLabel('total', locale), `${price.toFixed(2)} €`, true);
+      const priceFormatted = locale.startsWith('es') || locale.startsWith('ca') 
+        ? `${price.toFixed(2).replace('.', ',')} €`
+        : `${price.toFixed(2)} €`;
+      buildInfoRow(getLabel('total', locale), priceFormatted, true);
       buildInfoRow(getLabel('method', locale), methodName);
       
       doc.moveDown(1);

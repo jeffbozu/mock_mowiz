@@ -316,13 +316,13 @@ const generateTicketHTML = async (ticketData, locale = 'es') => {
             ${discount && discount !== 0 ? `
             <div class="info-row">
                 <span class="label">💰 ${t.discount}:</span>
-                <span class="value" style="color: #28a745;">${discount.toFixed(2)} €</span>
+                <span class="value" style="color: #28a745;">${locale.startsWith('es') || locale.startsWith('ca') ? discount.toFixed(2).replace('.', ',') : discount.toFixed(2)} €</span>
             </div>
             ` : ''}
         </div>
         
         <div class="price-highlight">
-            💰 ${t.totalPrice}: ${price.toFixed(2)}€
+            💰 ${t.totalPrice}: ${locale.startsWith('es') || locale.startsWith('ca') ? price.toFixed(2).replace('.', ',') : price.toFixed(2)}€
         </div>
         
         
