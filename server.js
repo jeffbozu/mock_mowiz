@@ -2,6 +2,7 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const QRCode = require('qrcode');
 const { getTranslations, formatDateTime, formatDuration } = require('./translations');
@@ -13,6 +14,23 @@ const PORT = process.env.PORT || 4000;
 
 // Middlewares de seguridad
 app.use(helmet());
+
+// Compresión gzip para reducir el tamaño de las respuestas
+app.use(compression());
+
+// Cache headers para respuestas estáticas
+app.use((req, res, next) => {
+  // Cache por 1 hora para configuración
+  if (req.path === '/v1/config') {
+    res.set('Cache-Control', 'public, max-age=3600');
+  }
+  // Cache por 5 minutos para endpoints de datos
+  if (req.path.includes('/api/')) {
+    res.set('Cache-Control', 'public, max-age=300');
+  }
+  next();
+});
+
 app.use(cors({
   origin: [
     'https://jeffbozu.github.io',
@@ -24,7 +42,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '5mb' })); // Reducido de 10mb a 5mb
 
 // Rate limiting: máximo 10 emails por IP cada 15 minutos
 const emailLimiter = rateLimit({
@@ -744,6 +762,22 @@ app.post('/api/auto-reply', async (req, res) => {
   }
 });
 
+// Endpoint de configuración para la app Flutter
+const configResponse = JSON.stringify({
+  apiBaseUrl: 'https://mock-mowiz.onrender.com',
+  version: '1.0.0',
+  features: {
+    email: true,
+    whatsapp: true,
+    pdf: true
+  }
+});
+
+app.get('/v1/config', (req, res) => {
+  res.set('Content-Type', 'application/json');
+  res.send(configResponse);
+});
+
 // Endpoint de salud
 app.get('/health', (req, res) => {
   res.json({
@@ -760,6 +794,7 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     description: 'Servidor proxy para envío de emails de tickets de estacionamiento',
     endpoints: {
+      'GET /v1/config': 'Configuración para la app Flutter',
       'POST /api/send-email': 'Enviar email con ticket',
       'POST /api/auto-reply': 'Auto-respuesta para emails recibidos',
       'GET /health': 'Estado del servidor',
@@ -782,6 +817,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor de email iniciado en puerto ${PORT}`);
   console.log(`📧 Configurado para Gmail: ${process.env.GMAIL_EMAIL}`);
   console.log(`🌐 Endpoints disponibles:`);
+  console.log(`   - GET /v1/config`);
   console.log(`   - POST /api/send-email`);
   console.log(`   - POST /api/auto-reply`);
   console.log(`   - GET /health`);
