@@ -1,10 +1,10 @@
 // Traducciones y funciones de formateo para el servidor de email
 
-// Función para formatear fecha y hora en formato 24h - CON zona horaria de España
+// Función para formatear fecha y hora en formato 24h - Forzar zona horaria de España
 const formatDateTime = (date, locale = 'es') => {
   const d = new Date(date);
   
-  // Convertir a zona horaria de España (CET/CEST)
+  // Forzar zona horaria de España (Europe/Madrid) para Render
   const spainTime = new Date(d.toLocaleString("en-US", {timeZone: "Europe/Madrid"}));
   
   const year = spainTime.getFullYear();
