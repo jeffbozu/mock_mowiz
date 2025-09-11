@@ -1,17 +1,15 @@
 // Traducciones y funciones de formateo para el servidor de email
 
-// Función para formatear fecha y hora en formato 24h - Forzar zona horaria de España
+// Función para formatear fecha y hora en formato 24h - SIN conversión de zona horaria
 const formatDateTime = (date, locale = 'es') => {
   const d = new Date(date);
   
-  // Forzar zona horaria de España (Europe/Madrid) para Render
-  const spainTime = new Date(d.toLocaleString("en-US", {timeZone: "Europe/Madrid"}));
-  
-  const year = spainTime.getFullYear();
-  const month = String(spainTime.getMonth() + 1).padStart(2, '0');
-  const day = String(spainTime.getDate()).padStart(2, '0');
-  const hours = String(spainTime.getHours()).padStart(2, '0');
-  const minutes = String(spainTime.getMinutes()).padStart(2, '0');
+  // Formatear directamente sin conversión de zona horaria para mantener la hora exacta
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
   
   return `${day}/${month}/${year}, ${hours}:${minutes}`;
 };
