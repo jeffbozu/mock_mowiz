@@ -85,9 +85,17 @@ function formatMessage(ticket = {}, locale = 'es') {
   if (ticket.end) lines.push(`${t.end}: ${ticket.end}`);
   if (ticket.duration) lines.push(`${t.duration}: ${ticket.duration}`);
   if (ticket.method) lines.push(`${t.method}: ${ticket.method}`);
-  if (typeof ticket.price === 'number') lines.push(`${t.price}: ${ticket.price.toFixed(2)} €`);
+  if (typeof ticket.price === 'number') {
+    const priceFormatted = (lang === 'es' || lang === 'ca') 
+      ? ticket.price.toFixed(2).replace('.', ',')
+      : ticket.price.toFixed(2);
+    lines.push(`${t.price}: ${priceFormatted} €`);
+  }
   if (typeof ticket.discount === 'number' && ticket.discount > 0) {
-    lines.push(`${t.discount}: -${ticket.discount.toFixed(2)} €`);
+    const discountFormatted = (lang === 'es' || lang === 'ca') 
+      ? ticket.discount.toFixed(2).replace('.', ',')
+      : ticket.discount.toFixed(2);
+    lines.push(`${t.discount}: -${discountFormatted} €`);
   }
   // QR data removed as requested
   lines.push('');
