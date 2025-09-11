@@ -316,13 +316,13 @@ const generateTicketHTML = async (ticketData, locale = 'es') => {
             ${discount && discount !== 0 ? `
             <div class="info-row">
                 <span class="label">💰 ${t.discount}:</span>
-                <span class="value" style="color: #28a745;">${discount.toFixed(2)} €</span>
+                <span class="value" style="color: #28a745;">${locale.startsWith('es') || locale.startsWith('ca') ? discount.toFixed(2).replace('.', ',') : discount.toFixed(2)} €</span>
             </div>
             ` : ''}
         </div>
         
         <div class="price-highlight">
-            💰 ${t.price}: ${price.toFixed(2)}€
+            💰 ${t.price}: ${locale.startsWith('es') || locale.startsWith('ca') ? price.toFixed(2).replace('.', ',') : price.toFixed(2)}€
         </div>
         
         
@@ -510,7 +510,7 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       to: recipientEmail,
       subject: subject,
       html: htmlContent,
-      text: `${t.title}\n\n${t.plate}: ${plate}\n${t.zone}: ${zone}\n${t.startTime}: ${start}\n${t.endTime}: ${end}\n${t.price}: ${price}€\n${t.method}: ${method}`,
+      text: `${t.title}\n\n${t.plate}: ${plate}\n${t.zone}: ${zone}\n${t.startTime}: ${start}\n${t.endTime}: ${end}\n${t.price}: ${locale.startsWith('es') || locale.startsWith('ca') ? price.toFixed(2).replace('.', ',') : price.toFixed(2)}€\n${t.method}: ${method}`,
       // Headers adicionales para mejorar la entrega a correos corporativos
       headers: {
         'X-Priority': '3',
