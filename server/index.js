@@ -86,13 +86,13 @@ function formatMessage(ticket = {}, locale = 'es') {
   if (ticket.duration) lines.push(`${t.duration}: ${ticket.duration}`);
   if (ticket.method) lines.push(`${t.method}: ${ticket.method}`);
   if (typeof ticket.price === 'number') {
-    const priceFormatted = (lang === 'es' || lang === 'ca') 
+    const priceFormatted = (locale === 'es' || locale === 'ca') 
       ? ticket.price.toFixed(2).replace('.', ',')
       : ticket.price.toFixed(2);
     lines.push(`${t.price}: ${priceFormatted} €`);
   }
   if (typeof ticket.discount === 'number' && ticket.discount > 0) {
-    const discountFormatted = (lang === 'es' || lang === 'ca') 
+    const discountFormatted = (locale === 'es' || locale === 'ca') 
       ? ticket.discount.toFixed(2).replace('.', ',')
       : ticket.discount.toFixed(2);
     lines.push(`${t.discount}: -${discountFormatted} €`);
