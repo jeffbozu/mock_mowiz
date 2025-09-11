@@ -8,6 +8,7 @@
  ******************************************************************/
 const express  = require('express');
 const cors     = require('cors');
+const compression = require('compression');
 const app      = express();
 const PORT     = process.env.PORT || 3001;
 
@@ -15,6 +16,22 @@ const PORT     = process.env.PORT || 3001;
 const PUBLIC_URL_DEFAULT = 'https://mock-mowiz.onrender.com';
 
 /* ---- 2. Middleware ------------------------------------------- */
+// Compresión gzip para reducir el tamaño de las respuestas
+app.use(compression());
+
+// Cache headers para respuestas estáticas
+app.use((req, res, next) => {
+  // Cache por 5 minutos para endpoints de datos
+  if (req.path.includes('/v1/onstreet-service/')) {
+    res.set('Cache-Control', 'public, max-age=300');
+  }
+  // Cache por 1 hora para configuración
+  if (req.path === '/v1/config') {
+    res.set('Cache-Control', 'public, max-age=3600');
+  }
+  next();
+});
+
 app.use(cors({
   origin: [
     'https://jeffbozu.github.io',
@@ -26,7 +43,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-app.use(express.json());          // body-parser para /pay-ticket
+app.use(express.json({ limit: '1mb' }));          // body-parser para /pay-ticket
 
 /* ---- 3. Datos mock (Zonas + bloques + colores) ---------------- */
 const zonas = {
@@ -66,36 +83,64 @@ const zonas = {
 };
 
 /* ---- 4.  /v1/config  → URL dinámica para la app --------------- */
-app.get('/v1/config', (req, res) => {
-  const apiBaseUrl =
-    process.env.PUBLIC_URL              // 1º variable de entorno (Render)
-    || PUBLIC_URL_DEFAULT               // 2º constante hard-coded
-    || `https://${req.headers.host}`;   // 3º fallback (local)
+// Cache de configuración para evitar procesamiento repetido
+const configApiBaseUrl = process.env.PUBLIC_URL || PUBLIC_URL_DEFAULT;
+const configResponse = JSON.stringify({ version: 1, apiBaseUrl: configApiBaseUrl });
 
-  res.json({ version: 1, apiBaseUrl });
+app.get('/v1/config', (req, res) => {
+  res.set('Content-Type', 'application/json');
+  res.send(configResponse);
 });
 
 /* ---- 5.  /zones (id, name, color) ----------------------------- */
+// Cache de zonas para evitar procesamiento repetido
+const zonesData = Object.entries(zonas).map(([id, z]) => ({
+  id, name: z.name, color: z.color,
+}));
+const zonesResponse = JSON.stringify(zonesData);
+
 app.get('/v1/onstreet-service/zones', (_req, res) => {
-  const data = Object.entries(zonas).map(([id, z]) => ({
-    id, name: z.name, color: z.color,
-  }));
-  res.json(data);
+  res.set('Content-Type', 'application/json');
+  res.send(zonesResponse);
 });
 
 /* ---- 6.  /product/by-zone  (tarifa completa) ----------------- */
+// Cache de productos por zona para evitar procesamiento repetido
+const productCache = new Map();
+
 app.get('/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate',
   (req, res) => {
-    const zona = zonas[req.params.zoneId];
+    const zoneId = req.params.zoneId;
+    const zona = zonas[zoneId];
     if (!zona) return res.json([]);
 
+    // Verificar cache primero
+    if (productCache.has(zoneId)) {
+      const cached = productCache.get(zoneId);
+      // Actualizar solo las fechas dinámicas
+      const now = Date.now();
+      const steps = zona.bloques.map(b => ({
+        ...b,
+        endDateTime: new Date(now + b.timeInSeconds * 1000).toISOString(),
+      }));
+      
+      cached[0].rateSteps.steps = steps;
+      cached[0].rateSteps.firstStepStartsAt = new Date(now).toISOString();
+      cached[0].rateSteps.priceRequestedAt = new Date(now).toISOString();
+      
+      res.set('Content-Type', 'application/json');
+      res.send(JSON.stringify(cached));
+      return;
+    }
+
+    // Generar respuesta y cachear
     const steps = zona.bloques.map(b => ({
       ...b,
       endDateTime: new Date(Date.now() + b.timeInSeconds * 1000).toISOString(),
     }));
 
-    res.json([{
-      id              : req.params.zoneId,
+    const response = [{
+      id              : zoneId,
       vehicleType     : 'CAR',
       productType     : 'STANDARD',
       averageStayDuration: 30,
@@ -118,7 +163,13 @@ app.get('/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate',
         paymentMethods    : ['CASH', 'BIZUM', 'CARD'],
         maxDurationSeconds: zona.maxDurationSeconds,
       },
-    }]);
+    }];
+
+    // Cachear la respuesta base (sin fechas dinámicas)
+    productCache.set(zoneId, JSON.parse(JSON.stringify(response)));
+    
+    res.set('Content-Type', 'application/json');
+    res.send(JSON.stringify(response));
 });
 
 /* ---- 7.  Pago & validación (demo en memoria) ----------------- */
