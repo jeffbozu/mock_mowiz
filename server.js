@@ -1,20 +1,37 @@
 /******************************************************************
- *  MOCK MOWIZ  –  Servidor Express con “config remota” (opción B)
+ *  MOCK MOWIZ  –  Servidor Express con "config remota" (opción B)
  *  --------------------------------------------------------------
- *  • La app Flutter arranca apuntando a PUBLIC_URL_DEFAULT.
- *  • Hace GET  /v1/config  ➜ recibe { apiBaseUrl: '...' } y
- *    actualiza la URL base al vuelo.                         
- *  • Puedes sobreescribir la URL en Render ➜ ENV PUBLIC_URL.
+ *  • La app Flutter arranca con defaultApiBaseUrl (compilado).
+ *  • Hace GET  /v1/config  ➜ recibe { apiBaseUrl } y "salta" aquí.
+ *  • Cambiar PUBLIC_URL_DEFAULT o la env var PUBLIC_URL ➜
+ *    no hace falta tocar la app, solo push + deploy.
  ******************************************************************/
 const express  = require('express');
 const cors     = require('cors');
+const compression = require('compression');
 const app      = express();
-const PORT     = process.env.PORT || 3000;
+const PORT     = process.env.PORT || 3001;
 
-/* ---- 1. URL por defecto (cambia y haz git push si quieres) ----- */
-const PUBLIC_URL_DEFAULT = 'https://mock-mowiz.onrender.com';
+/* ---- 1. URL por defecto de ESTA rama ------------------------- */
+const PUBLIC_URL_DEFAULT = 'https://tariff2.onrender.com';
 
 /* ---- 2. Middleware ------------------------------------------- */
+// Compresión gzip para reducir el tamaño de las respuestas
+app.use(compression());
+
+// Cache headers para respuestas estáticas
+app.use((req, res, next) => {
+  // Cache por 5 minutos para endpoints de datos
+  if (req.path.includes('/v1/onstreet-service/')) {
+    res.set('Cache-Control', 'public, max-age=300');
+  }
+  // Cache por 1 hora para configuración
+  if (req.path === '/v1/config') {
+    res.set('Cache-Control', 'public, max-age=3600');
+  }
+  next();
+});
+
 app.use(cors({
   origin: [
     'https://jeffbozu.github.io',
@@ -26,7 +43,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-app.use(express.json());  // para POST /pay-ticket
+app.use(express.json({ limit: '1mb' }));          // body-parser para /pay-ticket
 
 /* ---- 3. Datos mock ------------------------------------------- */
 const zonas = {
@@ -56,55 +73,79 @@ const zonas = {
   },
 };
 
-/* ---- 4. Endpoint “config” ------------------------------------ */
+/* ---- 4.  /v1/config  → URL dinámica para la app --------------- */
+// Cache de configuración para evitar procesamiento repetido
+const configApiBaseUrl = process.env.PUBLIC_URL || PUBLIC_URL_DEFAULT;
+const configResponse = JSON.stringify({ version: 1, apiBaseUrl: configApiBaseUrl });
+
 app.get('/v1/config', (req, res) => {
-  const apiBaseUrl =
-    process.env.PUBLIC_URL        // 1º variable de entorno (Render)
-      || PUBLIC_URL_DEFAULT       // 2º constante compilada
-      || `https://${req.headers.host}`; // 3º fallback local
-
-  res.json({ version: 1, apiBaseUrl });
+  res.set('Content-Type', 'application/json');
+  res.send(configResponse);
 });
 
-/* ---- 5. Zonas disponibles ------------------------------------ */
+/* ---- 5.  /zones (id, name, color) ----------------------------- */
+// Cache de zonas para evitar procesamiento repetido
+const zonesData = Object.entries(zonas).map(([id, z]) => ({
+  id, name: z.name, color: z.color,
+}));
+const zonesResponse = JSON.stringify(zonesData);
+
 app.get('/v1/onstreet-service/zones', (_req, res) => {
-  const data = Object.entries(zonas).map(([id, z]) => ({
-    id,
-    name : z.name,
-    color: z.color,
-  }));
-  res.json(data);
+  res.set('Content-Type', 'application/json');
+  res.send(zonesResponse);
 });
 
-/* ---- 6. Tarifas por zona ------------------------------------- */
-app.get(
-  '/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate',
+/* ---- 6.  /product/by-zone  (tarifa completa) ----------------- */
+// Cache de productos por zona para evitar procesamiento repetido
+const productCache = new Map();
+
+app.get('/v1/onstreet-service/product/by-zone/:zoneId&plate=:plate',
   (req, res) => {
-    const zona = zonas[req.params.zoneId];
+    const zoneId = req.params.zoneId;
+    const zona = zonas[zoneId];
     if (!zona) return res.json([]);
 
+    // Verificar cache primero
+    if (productCache.has(zoneId)) {
+      const cached = productCache.get(zoneId);
+      // Actualizar solo las fechas dinámicas
+      const now = Date.now();
+      const steps = zona.bloques.map(b => ({
+        ...b,
+        endDateTime: new Date(now + b.timeInSeconds * 1000).toISOString(),
+      }));
+      
+      cached[0].rateSteps.steps = steps;
+      cached[0].rateSteps.firstStepStartsAt = new Date(now).toISOString();
+      cached[0].rateSteps.priceRequestedAt = new Date(now).toISOString();
+      
+      res.set('Content-Type', 'application/json');
+      res.send(JSON.stringify(cached));
+      return;
+    }
+
+    // Generar respuesta y cachear
     const steps = zona.bloques.map(b => ({
       ...b,
       endDateTime: new Date(Date.now() + b.timeInSeconds * 1000).toISOString(),
     }));
 
-    res.json([{
-      id          : req.params.zoneId,
-      vehicleType : 'CAR',
-      productType : 'STANDARD',
+    const response = [{
+      id              : zoneId,
+      vehicleType     : 'CAR',
+      productType     : 'STANDARD',
       averageStayDuration: 30,
-      canDriveOff : true,
-      extensible  : true,
-      coldDownTime: 120,
-      name        : zona.name,
-      color       : zona.color,
-      description : `${zona.name} - Tarifa por bloques`,
-      rateSteps   : {
+      canDriveOff     : true,
+      extensible      : true,
+      coldDownTime    : 120,
+      name            : zona.name,
+      color           : zona.color,
+      description     : `${zona.name} – Tarifa por bloques`,
+      rateSteps       : {
         steps,
         firstStepStartsAt : new Date().toISOString(),
         startTimeInSeconds: 0,
-        minEndTimeInSeconds:
-          Math.min(...zona.bloques.map(b => b.timeInSeconds)),
+        minEndTimeInSeconds: Math.min(...zona.bloques.map(b => b.timeInSeconds)),
         ticketId          : 1,
         priceRequestedAt  : new Date().toISOString(),
         timeZone          : 'Europe/Madrid',
@@ -113,17 +154,21 @@ app.get(
         paymentMethods    : ['CASH', 'BIZUM', 'CARD'],
         maxDurationSeconds: zona.maxDurationSeconds,
       },
-    }]);
-  },
-);
+    }];
 
-/* ---- 7. Mock pago y validación ------------------------------- */
-let ticketsPagados = [{ plate: '1234ABC', ticketId: 1 }];
+    // Cachear la respuesta base (sin fechas dinámicas)
+    productCache.set(zoneId, JSON.parse(JSON.stringify(response)));
+    
+    res.set('Content-Type', 'application/json');
+    res.send(JSON.stringify(response));
+});
+
+/* ---- 7.  Pago & validación (demo en memoria) ----------------- */
+let ticketsPagados = [{ plate: 'ABCD123', ticketId: 1 }];
 
 app.post('/v1/onstreet-service/pay-ticket', (req, res) => {
   const { plate } = req.body || {};
   if (!plate) return res.status(400).json({ error: 'Falta matrícula' });
-
   if (ticketsPagados.some(t => t.plate === plate))
     return res.json({ success: false, message: 'Ticket ya existe' });
 
@@ -134,13 +179,12 @@ app.post('/v1/onstreet-service/pay-ticket', (req, res) => {
 app.get('/v1/onstreet-service/validate-ticket/:plate', (req, res) => {
   const t = ticketsPagados.find(x => x.plate === req.params.plate);
   res.json(
-    t
-      ? { valid: true,  ticketId: t.ticketId }
+    t ? { valid: true, ticketId: t.ticketId }
       : { valid: false, message: 'Ticket no encontrado' },
   );
 });
 
-/* ---- 8. Arranque -------------------------------------------- */
+/* ---- 8.  Arranque ------------------------------------------- */
 app.listen(PORT, () =>
-  console.log(`✅ Mock MOWIZ corriendo en http://localhost:${PORT}`),
+  console.log(`✅ Mock MOWIZ (tariff2) corriendo en http://localhost:${PORT}`),
 );
