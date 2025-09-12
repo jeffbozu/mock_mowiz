@@ -161,7 +161,11 @@ async function generateTicketPDF(ticketData, locale = 'es') {
           doc.fontSize(12)
              .font('Helvetica')
              .fillColor('#666666')
-             .text(getLabel('scan', locale), { align: 'center' });
+             .text(getLabel('scan', locale), 0, doc.y, { 
+               align: 'center',
+               width: doc.page.width,
+               lineGap: 2
+             });
           
           doc.fillColor('#000000');
         } catch (qrError) {
@@ -180,11 +184,18 @@ async function generateTicketPDF(ticketData, locale = 'es') {
       
       doc.moveDown(2);
       
-      // Pie de página - igual que Flutter
+      // Pie de página - centrado correctamente con hora local de España
+      const now = new Date();
+      const spainTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Madrid"}));
+      const footerText = `${getLabel('generated', locale)} ${formatDateTime(spainTime, locale)}`;
       doc.fontSize(10)
          .font('Helvetica')
          .fillColor('#666666')
-         .text(`${getLabel('generated', locale)} ${formatDateTime(new Date(), locale)}`, { align: 'center' });
+         .text(footerText, 0, doc.y, { 
+           align: 'center',
+           width: doc.page.width,
+           lineGap: 2
+         });
 
       doc.end();
       
