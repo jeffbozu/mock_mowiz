@@ -36,21 +36,33 @@ async function generateTicketPDF(ticketData, locale = 'es') {
         customMessage
       } = ticketData;
 
-      // Función auxiliar para crear filas de información
+      // Función auxiliar para crear filas de información con mejor diseño
       function buildInfoRow(label, value, isBold = false) {
         const currentY = doc.y;
+        const rowHeight = 25;
+        
+        // Fondo de la fila
+        doc.rect(50, currentY - 5, doc.page.width - 100, rowHeight)
+           .fill('#f8f9fa');
+        
+        // Borde izquierdo
+        doc.rect(50, currentY - 5, 4, rowHeight)
+           .fill('#E62144');
         
         // Label (izquierda)
         doc.fontSize(12)
            .font(isBold ? 'Helvetica-Bold' : 'Helvetica')
-           .text(label, 60, currentY, { width: 120, continued: false });
+           .fillColor('#495057')
+           .text(label, 65, currentY, { width: 120, continued: false });
         
         // Value (derecha)
         doc.fontSize(12)
            .font(isBold ? 'Helvetica-Bold' : 'Helvetica')
-           .text(value, 180, currentY, { width: 350 });
+           .fillColor('#212529')
+           .text(value, 185, currentY, { width: 350 });
         
-        doc.moveDown(0.3);
+        doc.fillColor('black');
+        doc.moveDown(0.5);
       }
 
       // Helpers de etiquetas y textos
@@ -92,12 +104,21 @@ async function generateTicketPDF(ticketData, locale = 'es') {
         return map[key] || key;
       }
 
-      // Título principal - igual que Flutter
-      doc.fontSize(24)
-         .font('Helvetica-Bold')
-         .text(getTitle(locale), { align: 'center' });
+      // Encabezado con fondo
+      doc.rect(0, 0, doc.page.width, 80)
+         .fill('#E62144');
       
-      doc.moveDown(1.5);
+      doc.fontSize(28)
+         .font('Helvetica-Bold')
+         .fillColor('white')
+         .text('🚗 Meypark', 0, 20, { align: 'center' });
+      
+      doc.fontSize(16)
+         .font('Helvetica')
+         .text(getTitle(locale), 0, 50, { align: 'center' });
+      
+      doc.fillColor('black');
+      doc.moveDown(3);
 
       // Información del ticket - formato idéntico a Flutter
       const zoneName = getZoneName(zone, locale);
@@ -127,11 +148,24 @@ async function generateTicketPDF(ticketData, locale = 'es') {
         buildInfoRow(getLabel('discount', locale), discountFormatted);
       }
       
-      // Precio total - destacado como en Flutter
+      // Precio total - destacado con fondo especial
       const priceFormatted = locale.startsWith('es') || locale.startsWith('ca') 
         ? `${price.toFixed(2).replace('.', ',')} €`
         : `${price.toFixed(2)} €`;
-      buildInfoRow(getLabel('total', locale), priceFormatted, true);
+      
+      // Fondo especial para el precio
+      const priceY = doc.y;
+      doc.rect(50, priceY - 5, doc.page.width - 100, 30)
+         .fill('#E62144');
+      
+      doc.fontSize(16)
+         .font('Helvetica-Bold')
+         .fillColor('white')
+         .text(`${getLabel('total', locale)}: ${priceFormatted}`, 0, priceY + 5, { align: 'center' });
+      
+      doc.fillColor('black');
+      doc.moveDown(1);
+      
       buildInfoRow(getLabel('method', locale), methodName);
       
       doc.moveDown(1);
@@ -140,7 +174,7 @@ async function generateTicketPDF(ticketData, locale = 'es') {
       
       doc.moveDown(1);
       
-      // Generar y agregar código QR - igual que Flutter
+      // Generar y agregar código QR con mejor diseño
       if (qrData) {
         try {
           // Convertir qrData a string si es un objeto
@@ -155,22 +189,26 @@ async function generateTicketPDF(ticketData, locale = 'es') {
             }
           });
           
-          // Centrar el QR como en Flutter
+          // Fondo para la sección QR
+          const qrY = doc.y;
+          doc.rect(50, qrY - 10, doc.page.width - 100, 200)
+             .fill('#f8f9fa');
+          
+          // Centrar el QR
           const qrX = (doc.page.width - 150) / 2;
-          doc.image(qrCodeBuffer, qrX, doc.y, { width: 150 });
+          doc.image(qrCodeBuffer, qrX, qrY + 10, { width: 150 });
           
-          doc.moveDown(8);
-          
-          doc.fontSize(12)
-             .font('Helvetica')
-             .fillColor('#666666')
-             .text(getLabel('scan', locale), 0, doc.y, { 
+          // Título del QR
+          doc.fontSize(14)
+             .font('Helvetica-Bold')
+             .fillColor('#E62144')
+             .text('📱 ' + getLabel('scan', locale), 0, qrY + 180, { 
                align: 'center',
-               width: doc.page.width,
-               lineGap: 2
+               width: doc.page.width
              });
           
           doc.fillColor('#000000');
+          doc.moveDown(3);
         } catch (qrError) {
           console.error('Error generando QR code:', qrError);
           // Si falla el QR, mostrar el texto como fallback

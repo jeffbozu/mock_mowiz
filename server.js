@@ -212,69 +212,87 @@ const generateTicketHTML = async (ticketData, locale = 'es') => {
         }
         .email-container {
             background-color: #ffffff;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e9ecef;
         }
         .header {
             text-align: center;
-            border-bottom: 3px solid #E62144;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            background: linear-gradient(135deg, #E62144 0%, #ff4757 100%);
+            color: white;
+            padding: 30px 20px;
+            margin: -40px -40px 30px -40px;
+            border-radius: 15px 15px 0 0;
         }
         .logo {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: bold;
-            color: #E62144;
             margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .ticket-info {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .info-row {
             display: flex;
             justify-content: space-between;
-            margin: 10px 0;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
+            align-items: center;
+            margin: 12px 0;
+            padding: 12px 15px;
+            background-color: white;
+            border-radius: 8px;
+            border-left: 4px solid #E62144;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .info-row:last-child {
-            border-bottom: none;
+            margin-bottom: 0;
         }
         .label {
             font-weight: 600;
             color: #495057;
+            font-size: 14px;
         }
         .value {
             color: #212529;
+            font-weight: 500;
+            font-size: 14px;
         }
         .price-highlight {
-            background-color: #E62144;
+            background: linear-gradient(135deg, #E62144 0%, #ff4757 100%);
             color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
+            padding: 20px 30px;
+            border-radius: 15px;
             text-align: center;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
-            margin: 20px 0;
+            margin: 25px 0;
+            box-shadow: 0 4px 15px rgba(230, 33, 68, 0.3);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .qr-section {
             text-align: center;
             margin: 30px 0;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .footer {
             text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
+            margin-top: 40px;
+            padding: 25px 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
             color: #6c757d;
             font-size: 14px;
+            border: 1px solid #dee2e6;
         }
         .custom-message {
             background-color: #e3f2fd;
