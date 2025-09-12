@@ -63,6 +63,9 @@ async function generateTicketPDF(ticketData, locale = 'es') {
         const t = getTranslations(loc);
         if (zone === 'green') return t.zoneGreen;
         if (zone === 'blue') return t.zoneBlue;
+        if (zone === 'moto') return t.zoneMoto;
+        if (zone === 'coche') return t.zoneCoche;
+        if (zone === 'camion') return t.zoneCamion;
         return zone;
       }
 
