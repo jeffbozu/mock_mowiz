@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
+const twilio = require('twilio');
 const app = express();
 const PORT = process.env.PORT || 3002;
 
@@ -28,6 +29,12 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '1mb' }));
+
+// Configuración de Twilio
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
 // Traducciones
 const translations = {
@@ -82,11 +89,11 @@ function formatMessage(ticket = {}, locale = 'es') {
 
   // Función para mapear zona
   function getZoneName(zone, loc) {
-    if (zone === 'moto') return 'moto';
-    if (zone === 'coche') return 'coche';
-    if (zone === 'camion') return 'camión';
-    if (zone === 'green') return 'verde';
-    if (zone === 'blue') return 'azul';
+    if (zone === 'moto') return 'Zona Moto';
+    if (zone === 'coche') return 'Zona Coche';
+    if (zone === 'camion') return 'Zona Camión';
+    if (zone === 'green') return 'Zona Verde';
+    if (zone === 'blue') return 'Zona Azul';
     return zone;
   }
 
@@ -94,11 +101,11 @@ function formatMessage(ticket = {}, locale = 'es') {
   lines.push('');
   if (ticket.plate) lines.push(`${t.plate}: *${ticket.plate}*`);
   if (ticket.zone) lines.push(`${t.zone}: ${getZoneName(ticket.zone, locale)}`);
-  if (ticket.startTime) lines.push(`${t.start}: ${ticket.startTime}`);
-  if (ticket.endTime) lines.push(`${t.end}: ${ticket.endTime}`);
+  if (ticket.start) lines.push(`${t.start}: ${ticket.start}`);
+  if (ticket.end) lines.push(`${t.end}: ${ticket.end}`);
   if (ticket.duration) lines.push(`${t.duration}: ${ticket.duration}`);
-  if (ticket.paymentMethod) lines.push(`${t.payment}: ${ticket.paymentMethod}`);
-  if (ticket.amount) lines.push(`${t.amount}: ${formatPrice(ticket.amount, locale)}`);
+  if (ticket.method) lines.push(`${t.payment}: ${ticket.method}`);
+  if (ticket.price) lines.push(`${t.amount}: ${formatPrice(ticket.price * 100, locale)}`);
   lines.push('');
   lines.push(t.thanks);
 
@@ -106,34 +113,45 @@ function formatMessage(ticket = {}, locale = 'es') {
 }
 
 // Endpoint para enviar WhatsApp
-app.post('/v1/whatsapp/send', (req, res) => {
+app.post('/v1/whatsapp/send', async (req, res) => {
   try {
-    const { ticket, locale = 'es' } = req.body;
+    const { phone, ticket, locale = 'es' } = req.body;
     
-    if (!ticket) {
+    if (!ticket || !phone) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Ticket data is required' 
+        error: 'Phone and ticket data are required' 
       });
     }
 
-    // Simular envío de WhatsApp
+    // Formatear mensaje
     const message = formatMessage(ticket, locale);
     
-    // En un entorno real, aquí se enviaría el mensaje via Twilio o similar
-    console.log('WhatsApp message:', message);
+    console.log('📱 Enviando WhatsApp a:', phone);
+    console.log('📱 Mensaje:', message);
+    
+    // Enviar mensaje real via Twilio
+    const twilioMessage = await client.messages.create({
+      body: message,
+      from: process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886', // Número de Twilio WhatsApp
+      to: `whatsapp:${phone}`
+    });
+    
+    console.log('✅ WhatsApp enviado exitosamente:', twilioMessage.sid);
     
     res.json({
       success: true,
       message: 'WhatsApp message sent successfully',
+      messageId: twilioMessage.sid,
       formattedMessage: message
     });
     
   } catch (error) {
-    console.error('Error sending WhatsApp:', error);
+    console.error('❌ Error sending WhatsApp:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: 'Error sending WhatsApp message',
+      details: error.message
     });
   }
 });
