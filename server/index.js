@@ -94,10 +94,20 @@ function formatMessage(ticket = {}, locale = 'es') {
   const lines = [];
   const t = translations[locale] || translations.es;
   
+  // Función para mapear zona
+  function getZoneName(zone, loc) {
+    if (zone === 'moto') return 'moto';
+    if (zone === 'coche') return 'coche';
+    if (zone === 'camion') return 'camión';
+    if (zone === 'green') return 'verde';
+    if (zone === 'blue') return 'azul';
+    return zone;
+  }
+  
   lines.push(t.title);
   lines.push('');
   if (ticket.plate) lines.push(`${t.plate}: *${ticket.plate}*`);
-  if (ticket.zone) lines.push(`${t.zone}: ${ticket.zone}`);
+  if (ticket.zone) lines.push(`${t.zone}: ${getZoneName(ticket.zone, locale)}`);
   if (ticket.start) lines.push(`${t.start}: ${ticket.start}`);
   if (ticket.end) lines.push(`${t.end}: ${ticket.end}`);
   if (ticket.duration) lines.push(`${t.duration}: ${ticket.duration}`);
