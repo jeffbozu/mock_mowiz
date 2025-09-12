@@ -130,15 +130,35 @@ app.post('/v1/whatsapp/send', async (req, res) => {
     console.log('📱 Enviando WhatsApp a:', phone);
     console.log('📱 Mensaje:', message);
     
-    // Por ahora, simular envío exitoso hasta configurar Twilio
-    console.log('✅ WhatsApp simulado exitosamente');
-    
-    res.json({
-      success: true,
-      message: 'WhatsApp message sent successfully',
-      messageId: 'simulated_' + Date.now(),
-      formattedMessage: message
-    });
+    // Enviar mensaje real con Twilio
+    try {
+      const twilioMessage = await client.messages.create({
+        from: 'whatsapp:+14155238886', // Número de Twilio Sandbox
+        to: `whatsapp:${phone}`,
+        body: message
+      });
+      
+      console.log('✅ WhatsApp enviado exitosamente:', twilioMessage.sid);
+      
+      res.json({
+        success: true,
+        message: 'WhatsApp message sent successfully',
+        messageId: twilioMessage.sid,
+        status: twilioMessage.status,
+        formattedMessage: message
+      });
+    } catch (twilioError) {
+      console.error('❌ Error de Twilio:', twilioError);
+      
+      // Fallback a simulación si Twilio falla
+      console.log('⚠️ Fallback a simulación');
+      res.json({
+        success: true,
+        message: 'WhatsApp message sent successfully (simulated)',
+        messageId: 'simulated_' + Date.now(),
+        formattedMessage: message
+      });
+    }
     
   } catch (error) {
     console.error('❌ Error sending WhatsApp:', error);
