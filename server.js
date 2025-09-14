@@ -491,19 +491,6 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     provider: req.body.provider || 'gmail'
   });
   
-  // Responder inmediatamente que se está procesando
-  res.writeHead(200, {
-    'Content-Type': 'application/json',
-    'Transfer-Encoding': 'chunked'
-  });
-  
-  // Enviar respuesta inicial
-  res.write(JSON.stringify({
-    success: true,
-    message: 'Procesando email...',
-    status: 'processing'
-  }));
-  
   try {
     const {
       recipientEmail,
@@ -686,15 +673,12 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     console.log(`✅ Email enviado exitosamente a: ${recipientEmail}`);
     console.log(`📧 Message ID: ${info.messageId}`);
 
-    // Enviar respuesta final de éxito
-    res.write(JSON.stringify({
+    res.json({
       success: true,
       message: 'Email enviado correctamente',
       messageId: info.messageId,
-      status: 'sent',
       processingTime: Date.now() - startTime
-    }));
-    res.end();
+    });
 
   } catch (error) {
     console.error('❌ Error enviando email:', error);
@@ -734,11 +718,9 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       errorMessage = 'Timeout de conexión con el servidor de correo';
     }
 
-    // Enviar respuesta de error
-    res.write(JSON.stringify({
+    res.status(500).json({
       success: false,
       error: errorMessage,
-      status: 'error',
       details: error && (error.stack || error.message || String(error)),
       debugInfo: {
         recipient: req.body.recipientEmail || 'unknown',
@@ -746,8 +728,7 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
         errorCode: error.code,
         responseCode: error.responseCode
       }
-    }));
-    res.end();
+    });
   }
 });
 
