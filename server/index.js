@@ -36,6 +36,16 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
+// Validar configuración de Twilio
+const isTwilioConfigured = () => {
+  return process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN;
+};
+
+// Número de WhatsApp configurable
+const getWhatsAppFromNumber = () => {
+  return process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
+};
+
 // Traducciones
 const translations = {
   es: {
@@ -112,51 +122,149 @@ function formatMessage(ticket = {}, locale = 'es') {
   return lines.join('\n');
 }
 
+// Función para validar número de teléfono
+const validatePhoneNumber = (phone) => {
+  // Remover espacios y caracteres especiales
+  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+  
+  // Validar formato internacional
+  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+  return phoneRegex.test(cleanPhone);
+};
+
+// Función para formatear número de teléfono
+const formatPhoneNumber = (phone) => {
+  let cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+  
+  // Si no tiene prefijo internacional, agregar +34 (España)
+  if (!cleanPhone.startsWith('+')) {
+    if (cleanPhone.startsWith('34')) {
+      cleanPhone = '+' + cleanPhone;
+    } else if (cleanPhone.startsWith('6') || cleanPhone.startsWith('7')) {
+      cleanPhone = '+34' + cleanPhone;
+    } else {
+      cleanPhone = '+34' + cleanPhone;
+    }
+  }
+  
+  return cleanPhone;
+};
+
 // Endpoint para enviar WhatsApp
 app.post('/v1/whatsapp/send', async (req, res) => {
   try {
     const { phone, ticket, locale = 'es' } = req.body;
     
+    console.log('📱 Solicitud de WhatsApp recibida:', {
+      phone: phone ? phone.substring(0, 5) + '***' : 'undefined',
+      hasTicket: !!ticket,
+      locale
+    });
+    
+    // Validaciones mejoradas
     if (!ticket || !phone) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Phone and ticket data are required' 
+        error: 'Phone and ticket data are required',
+        code: 'MISSING_DATA'
       });
     }
 
+    // Validar número de teléfono
+    if (!validatePhoneNumber(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid phone number format',
+        code: 'INVALID_PHONE'
+      });
+    }
+
+    // Formatear número de teléfono
+    const formattedPhone = formatPhoneNumber(phone);
+    const whatsappPhone = `whatsapp:${formattedPhone}`;
+    
     // Formatear mensaje
     const message = formatMessage(ticket, locale);
     
-    console.log('📱 Enviando WhatsApp a:', phone);
-    console.log('📱 Mensaje:', message);
+    console.log('📱 Enviando WhatsApp a:', whatsappPhone);
+    console.log('📱 Mensaje formateado:', message.substring(0, 100) + '...');
+    
+    // Verificar si Twilio está configurado
+    if (!isTwilioConfigured()) {
+      console.warn('⚠️ Twilio no configurado, usando simulación');
+      return res.json({
+        success: true,
+        message: 'WhatsApp message sent successfully (simulated - Twilio not configured)',
+        messageId: 'simulated_' + Date.now(),
+        status: 'simulated',
+        formattedMessage: message,
+        warning: 'Twilio credentials not configured'
+      });
+    }
     
     // Enviar mensaje real con Twilio
     try {
       const twilioMessage = await client.messages.create({
-        from: 'whatsapp:+14155238886', // Número de Twilio Sandbox
-        to: `whatsapp:${phone}`,
+        from: getWhatsAppFromNumber(),
+        to: whatsappPhone,
         body: message
       });
       
-      console.log('✅ WhatsApp enviado exitosamente:', twilioMessage.sid);
+      console.log('✅ WhatsApp enviado exitosamente:', {
+        messageId: twilioMessage.sid,
+        status: twilioMessage.status,
+        to: whatsappPhone
+      });
       
       res.json({
         success: true,
         message: 'WhatsApp message sent successfully',
         messageId: twilioMessage.sid,
         status: twilioMessage.status,
-        formattedMessage: message
+        formattedMessage: message,
+        to: whatsappPhone
       });
     } catch (twilioError) {
-      console.error('❌ Error de Twilio:', twilioError);
+      console.error('❌ Error de Twilio:', {
+        code: twilioError.code,
+        message: twilioError.message,
+        status: twilioError.status,
+        moreInfo: twilioError.moreInfo
+      });
       
-      // Fallback a simulación si Twilio falla
-      console.log('⚠️ Fallback a simulación');
-      res.json({
-        success: true,
-        message: 'WhatsApp message sent successfully (simulated)',
-        messageId: 'simulated_' + Date.now(),
-        formattedMessage: message
+      // Manejar errores específicos de Twilio
+      let errorMessage = 'Error sending WhatsApp message';
+      let errorCode = 'TWILIO_ERROR';
+      
+      if (twilioError.code === 21211) {
+        errorMessage = 'Invalid phone number format';
+        errorCode = 'INVALID_PHONE';
+      } else if (twilioError.code === 21610) {
+        errorMessage = 'Phone number is not a valid WhatsApp number';
+        errorCode = 'NOT_WHATSAPP_NUMBER';
+      } else if (twilioError.code === 63007) {
+        errorMessage = 'WhatsApp number is not available';
+        errorCode = 'WHATSAPP_UNAVAILABLE';
+      }
+      
+      // Fallback a simulación solo para ciertos errores
+      if (twilioError.code === 63007 || twilioError.code === 21610) {
+        console.log('⚠️ Fallback a simulación por error de WhatsApp');
+        return res.json({
+          success: true,
+          message: 'WhatsApp message sent successfully (simulated - WhatsApp not available)',
+          messageId: 'simulated_' + Date.now(),
+          status: 'simulated',
+          formattedMessage: message,
+          warning: errorMessage
+        });
+      }
+      
+      res.status(500).json({
+        success: false,
+        error: errorMessage,
+        code: errorCode,
+        details: twilioError.message
       });
     }
     
@@ -164,7 +272,8 @@ app.post('/v1/whatsapp/send', async (req, res) => {
     console.error('❌ Error sending WhatsApp:', error);
     res.status(500).json({
       success: false,
-      error: 'Error sending WhatsApp message',
+      error: 'Internal server error',
+      code: 'INTERNAL_ERROR',
       details: error.message
     });
   }
@@ -172,7 +281,76 @@ app.post('/v1/whatsapp/send', async (req, res) => {
 
 // Endpoint de salud
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', service: 'WhatsApp Service' });
+  res.json({ 
+    status: 'OK', 
+    service: 'WhatsApp Service',
+    twilioConfigured: isTwilioConfigured(),
+    whatsappFrom: getWhatsAppFromNumber(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Endpoint de configuración
+app.get('/v1/config', (req, res) => {
+  res.json({
+    service: 'WhatsApp Service',
+    version: '2.0.0',
+    twilioConfigured: isTwilioConfigured(),
+    whatsappFrom: getWhatsAppFromNumber(),
+    features: {
+      phoneValidation: true,
+      autoFormatting: true,
+      errorHandling: true,
+      fallbackSimulation: true
+    },
+    endpoints: {
+      'POST /v1/whatsapp/send': 'Send WhatsApp message',
+      'GET /health': 'Service health check',
+      'GET /v1/config': 'Service configuration'
+    }
+  });
+});
+
+// Endpoint de prueba
+app.post('/v1/whatsapp/test', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Phone number is required for test'
+      });
+    }
+    
+    // Validar número
+    if (!validatePhoneNumber(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid phone number format',
+        phone: phone
+      });
+    }
+    
+    const formattedPhone = formatPhoneNumber(phone);
+    const whatsappPhone = `whatsapp:${formattedPhone}`;
+    
+    res.json({
+      success: true,
+      message: 'Phone number validation successful',
+      originalPhone: phone,
+      formattedPhone: formattedPhone,
+      whatsappPhone: whatsappPhone,
+      twilioConfigured: isTwilioConfigured()
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test failed',
+      details: error.message
+    });
+  }
 });
 
 // Arranque del servidor
