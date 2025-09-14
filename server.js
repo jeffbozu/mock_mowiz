@@ -56,20 +56,54 @@ const emailLimiter = rateLimit({
   }
 });
 
-// Configuración de transporters para diferentes proveedores
+// Pool de transporters para reutilizar conexiones
+const transporterPool = new Map();
+
+// Configuración optimizada de transporters para diferentes proveedores
 const createTransporter = (provider, email, password) => {
+  const poolKey = `${provider}-${email}`;
+  
+  // Reutilizar transporter si ya existe
+  if (transporterPool.has(poolKey)) {
+    return transporterPool.get(poolKey);
+  }
+
   const configs = {
     gmail: {
       service: 'gmail',
-      auth: { user: email, pass: password }
+      auth: { user: email, pass: password },
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 50,
+      rateDelta: 10000,
+      rateLimit: 3,
+      connectionTimeout: 30000, // Reducido de 60s a 30s
+      greetingTimeout: 15000,   // Reducido de 30s a 15s
+      socketTimeout: 30000      // Reducido de 60s a 30s
     },
     hotmail: {
       service: 'hotmail',
-      auth: { user: email, pass: password }
+      auth: { user: email, pass: password },
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 50,
+      rateDelta: 10000,
+      rateLimit: 3,
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000
     },
     outlook: {
       service: 'outlook',
-      auth: { user: email, pass: password }
+      auth: { user: email, pass: password },
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 50,
+      rateDelta: 10000,
+      rateLimit: 3,
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000
     },
     meypar: {
       host: 'smtp.gmail.com',
@@ -80,9 +114,14 @@ const createTransporter = (provider, email, password) => {
         rejectUnauthorized: false,
         ciphers: 'SSLv3'
       },
-      connectionTimeout: 60000,
-      greetingTimeout: 30000,
-      socketTimeout: 60000
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 50,
+      rateDelta: 10000,
+      rateLimit: 3,
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000
     },
     corporate: {
       host: 'smtp.gmail.com',
@@ -93,24 +132,35 @@ const createTransporter = (provider, email, password) => {
         rejectUnauthorized: false,
         ciphers: 'SSLv3'
       },
-      connectionTimeout: 60000,
-      greetingTimeout: 30000,
-      socketTimeout: 60000,
       pool: true,
       maxConnections: 5,
       maxMessages: 100,
-      rateDelta: 20000,
-      rateLimit: 5
+      rateDelta: 15000,
+      rateLimit: 5,
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000
     },
     custom: {
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT || 587,
       secure: false,
-      auth: { user: email, pass: password }
+      auth: { user: email, pass: password },
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 50,
+      rateDelta: 10000,
+      rateLimit: 3,
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000
     }
   };
   
-  return nodemailer.createTransport(configs[provider] || configs.gmail);
+  const transporter = nodemailer.createTransport(configs[provider] || configs.gmail);
+  transporterPool.set(poolKey, transporter);
+  
+  return transporter;
 };
 
 // Función para detectar automáticamente el proveedor basado en el dominio del destinatario
@@ -441,6 +491,19 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     provider: req.body.provider || 'gmail'
   });
   
+  // Responder inmediatamente que se está procesando
+  res.writeHead(200, {
+    'Content-Type': 'application/json',
+    'Transfer-Encoding': 'chunked'
+  });
+  
+  // Enviar respuesta inicial
+  res.write(JSON.stringify({
+    success: true,
+    message: 'Procesando email...',
+    status: 'processing'
+  }));
+  
   try {
     const {
       recipientEmail,
@@ -522,25 +585,42 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     // Asunto fijo solicitado: solo 'Meypark'
     const subject = 'Meypark';
 
-    // Generar QR en buffer PNG para usar como imagen inline (CID) en el email
-    let qrImageBuffer = null;
-    if (qrData) {
-      try {
-        const qrStringForEmail = typeof qrData === 'string' ? qrData : JSON.stringify(qrData);
-        qrImageBuffer = await QRCode.toBuffer(qrStringForEmail, {
-          width: 150,
-          margin: 2,
-          color: { dark: '#000000', light: '#FFFFFF' }
-        });
-      } catch (e) {
-        console.warn('⚠️ No se pudo generar QR inline para el email:', e?.message || e);
-      }
+    // Procesar QR y PDF en paralelo para mayor velocidad
+    console.log('🚀 Iniciando procesamiento paralelo de QR y PDF...');
+    const startTime = Date.now();
+    
+    const [qrImageBuffer, pdfBuffer] = await Promise.allSettled([
+      // Generar QR en buffer PNG para usar como imagen inline (CID) en el email
+      qrData ? QRCode.toBuffer(typeof qrData === 'string' ? qrData : JSON.stringify(qrData), {
+        width: 150,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' }
+      }) : Promise.resolve(null),
+      
+      // Generar PDF del ticket
+      generateTicketPDF(ticketData, locale)
+    ]);
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`⚡ Procesamiento paralelo completado en ${processingTime}ms`);
+    
+    // Manejar resultados
+    const qrBuffer = qrImageBuffer.status === 'fulfilled' ? qrImageBuffer.value : null;
+    const pdfBufferResult = pdfBuffer.status === 'fulfilled' ? pdfBuffer.value : null;
+    
+    if (qrImageBuffer.status === 'rejected') {
+      console.warn('⚠️ No se pudo generar QR inline para el email:', qrImageBuffer.reason?.message || qrImageBuffer.reason);
     }
     
-    // Generar PDF del ticket
-    console.log('🧾 Generando PDF del ticket...');
-    const pdfBuffer = await generateTicketPDF(ticketData, locale);
-    console.log('🧾 PDF generado. Tamaño:', pdfBuffer?.length, 'bytes');
+    if (pdfBuffer.status === 'rejected') {
+      console.error('❌ Error generando PDF:', pdfBuffer.reason?.message || pdfBuffer.reason);
+      return res.status(500).json({
+        success: false,
+        error: 'Error generando PDF del ticket'
+      });
+    }
+    
+    console.log('🧾 PDF generado. Tamaño:', pdfBufferResult?.length, 'bytes');
 
     // Configurar email con PDF adjunto - optimizado para correos corporativos
     const mailOptions = {
@@ -568,16 +648,16 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       },
       attachments: [
         // Adjuntar QR como imagen inline si existe
-        ...(qrImageBuffer ? [{
+        ...(qrBuffer ? [{
           filename: 'ticket-qr.png',
-          content: qrImageBuffer,
+          content: qrBuffer,
           cid: 'ticket-qr',
           contentType: 'image/png'
         }] : []),
         // Adjuntar PDF del ticket
         {
           filename: `ticket-${plate}-${new Date().toISOString().split('T')[0]}.pdf`,
-          content: pdfBuffer,
+          content: pdfBufferResult,
           contentType: 'application/pdf'
         }
       ]
@@ -606,11 +686,15 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     console.log(`✅ Email enviado exitosamente a: ${recipientEmail}`);
     console.log(`📧 Message ID: ${info.messageId}`);
 
-    res.json({
+    // Enviar respuesta final de éxito
+    res.write(JSON.stringify({
       success: true,
       message: 'Email enviado correctamente',
-      messageId: info.messageId
-    });
+      messageId: info.messageId,
+      status: 'sent',
+      processingTime: Date.now() - startTime
+    }));
+    res.end();
 
   } catch (error) {
     console.error('❌ Error enviando email:', error);
@@ -650,9 +734,11 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       errorMessage = 'Timeout de conexión con el servidor de correo';
     }
 
-    res.status(500).json({
+    // Enviar respuesta de error
+    res.write(JSON.stringify({
       success: false,
       error: errorMessage,
+      status: 'error',
       details: error && (error.stack || error.message || String(error)),
       debugInfo: {
         recipient: req.body.recipientEmail || 'unknown',
@@ -660,7 +746,8 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
         errorCode: error.code,
         responseCode: error.responseCode
       }
-    });
+    }));
+    res.end();
   }
 });
 
@@ -788,7 +875,31 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    memoryUsage: process.memoryUsage(),
+    transporterPoolSize: transporterPool.size,
+    version: '2.0.0-optimized'
+  });
+});
+
+// Endpoint de rendimiento
+app.get('/api/performance', (req, res) => {
+  res.json({
+    status: 'OK',
+    performance: {
+      uptime: process.uptime(),
+      memoryUsage: process.memoryUsage(),
+      transporterPoolSize: transporterPool.size,
+      activeConnections: Array.from(transporterPool.values()).length,
+      version: '2.0.0-optimized',
+      optimizations: [
+        'Connection pooling enabled',
+        'Parallel QR/PDF processing',
+        'Reduced SMTP timeouts',
+        'Streaming responses',
+        'Connection reuse'
+      ]
+    }
   });
 });
 
