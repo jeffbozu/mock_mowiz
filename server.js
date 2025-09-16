@@ -51,7 +51,7 @@ const zonas = {
     name  : 'Zona Coche',
     color : '#FFD600',
     bloques: [
-      { minutos:  8, timeInSeconds:  480, priceInCents:  20 },
+      { minutos:  8, timeInSeconds:  480, priceInCents:  55 },
       { minutos: 16, timeInSeconds:  960, priceInCents:  34 },
       { minutos: 32, timeInSeconds: 1920, priceInCents:  65 },
       { minutos: 60, timeInSeconds: 3600, priceInCents: 110 },
