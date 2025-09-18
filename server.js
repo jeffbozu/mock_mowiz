@@ -200,5 +200,5 @@ app.get('/v1/onstreet-service/validate-ticket/:plate', (req, res) => {
 
 /* ---- 8.  Arranque ------------------------------------------- */
 app.listen(PORT, () =>
-  console.log(`✅ Mock MOWIZ (main) corriendo en http://localhost:${PORT}`),
+  console.log(`✅ Mock MOWIZ (main) corriendo en http://localhost:${PORT} - CORS updated`),
 );
