@@ -75,16 +75,24 @@ const createTransporter = (provider, email, password) => {
 
   const configs = {
     gmail: {
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // true para 465, false para otros puertos
       auth: { user: email, pass: password },
+      tls: {
+        rejectUnauthorized: false,
+        ciphers: 'SSLv3'
+      },
       pool: true,
       maxConnections: 3,
       maxMessages: 50,
       rateDelta: 10000,
       rateLimit: 3,
-      connectionTimeout: 30000, // Reducido de 60s a 30s
-      greetingTimeout: 15000,   // Reducido de 30s a 15s
-      socketTimeout: 30000      // Reducido de 60s a 30s
+      connectionTimeout: 60000, // Aumentado a 60s
+      greetingTimeout: 30000,   // Aumentado a 30s
+      socketTimeout: 60000,    // Aumentado a 60s
+      debug: true, // Habilitar debug SMTP
+      logger: true // Habilitar logs SMTP
     },
     hotmail: {
       service: 'hotmail',
@@ -557,6 +565,13 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     }
 
     // Crear transporter
+    console.log('🔧 Configuración SMTP usada:', {
+      provider: emailProvider,
+      host: emailProvider === 'gmail' ? 'smtp.gmail.com' : emailProvider,
+      fromEmail: fromEmail,
+      hasPassword: !!fromPassword
+    });
+    
     const transporter = createTransporter(emailProvider, fromEmail, fromPassword);
 
     // Generar contenido del email
