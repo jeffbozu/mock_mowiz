@@ -545,8 +545,8 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     const detectedProvider = detectEmailProvider(recipientEmail);
     
     // Usar credenciales del request o variables de entorno (fallback a GMAIL_*)
-    const fromEmail = senderEmail || process.env.EMAIL_USER || process.env.GMAIL_EMAIL;
-    const fromPassword = senderPassword || process.env.EMAIL_PASSWORD || process.env.GMAIL_PASSWORD;
+        const fromEmail = senderEmail || process.env.GMAIL_EMAIL || 'jbolanos.meypar@gmail.com';
+        const fromPassword = senderPassword || process.env.GMAIL_PASSWORD || 'pyyw gndl htxv byeu';
     const emailProvider = provider || detectedProvider;
 
     if (!fromEmail || !fromPassword) {
