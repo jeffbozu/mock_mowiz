@@ -21,7 +21,12 @@ app.use(cors({
     'https://jeffbozu.github.io',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://localhost:8080'
+    'http://localhost:8080',
+    'http://localhost:8081',
+    'http://localhost:9001',
+    'http://127.0.0.1:8080',
+    'http://127.0.0.1:8081',
+    'http://127.0.0.1:9001'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
