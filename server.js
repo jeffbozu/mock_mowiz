@@ -76,23 +76,18 @@ const createTransporter = (provider, email, password) => {
   const configs = {
     gmail: {
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // true para 465, false para otros puertos
+      port: 465,
+      secure: true, // SSL/TLS
       auth: { user: email, pass: password },
       tls: {
-        rejectUnauthorized: false,
-        ciphers: 'SSLv3'
+        rejectUnauthorized: false
       },
-      pool: true,
-      maxConnections: 3,
-      maxMessages: 50,
-      rateDelta: 10000,
-      rateLimit: 3,
-      connectionTimeout: 60000, // Aumentado a 60s
-      greetingTimeout: 30000,   // Aumentado a 30s
-      socketTimeout: 60000,    // Aumentado a 60s
-      debug: true, // Habilitar debug SMTP
-      logger: true // Habilitar logs SMTP
+      pool: false, // Deshabilitar pool para evitar problemas
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
+      debug: true,
+      logger: true
     },
     hotmail: {
       service: 'hotmail',
@@ -572,7 +567,15 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
       hasPassword: !!fromPassword
     });
     
-    const transporter = createTransporter(emailProvider, fromEmail, fromPassword);
+    // Si Gmail falla, intentar con SendGrid como fallback
+    let transporter;
+    try {
+      transporter = createTransporter(emailProvider, fromEmail, fromPassword);
+    } catch (error) {
+      console.log('⚠️ Error creando transporter Gmail, intentando SendGrid...');
+      // Aquí podríamos implementar fallback a SendGrid
+      throw error;
+    }
 
     // Generar contenido del email
     const ticketData = {
