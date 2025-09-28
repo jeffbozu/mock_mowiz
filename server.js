@@ -56,7 +56,7 @@ const zonas = {
     name  : 'Zona azul',
     color : '#0000FF',
     bloques: [
-      { minutos: 3,  timeInSeconds:  180, priceInCents:  85 },
+      { minutos: 3,  timeInSeconds:  180, priceInCents:  80 },
       { minutos: 10, timeInSeconds:  600, priceInCents:  90 },
       { minutos: 25, timeInSeconds:  1500, priceInCents:  65 },
       { minutos: 120, timeInSeconds: 7200, priceInCents:  90 },
