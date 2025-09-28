@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
-const twilio = require('twilio');
+const { Twilio } = require('twilio');
 const app = express();
 const PORT = process.env.PORT || 3003;
 
