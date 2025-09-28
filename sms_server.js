@@ -121,16 +121,17 @@ function formatSMSMessage(ticket, locale = 'es') {
   const zoneName = zoneMap[ticket.zone] || ticket.zone;
   const methodName = methodMap[ticket.method] || ticket.method;
 
-  let message = `${t.title}\n\n`;
-  message += `🚙 ${t.plate}: ${ticket.plate}\n`;
-  message += `📍 ${t.zone}: ${zoneName}\n`;
-  message += `🕐 ${t.start}: ${ticket.start}\n`;
-  message += `🕙 ${t.end}: ${ticket.end}\n`;
-  message += `⏱ ${t.duration}: ${ticket.duration}\n`;
-  message += `💳 ${t.method}: ${methodName}\n`;
-  message += `💰 ${t.price}: ${ticket.price}€\n\n`;
-  message += `✅ ${t.thanks}\n\n`;
-  message += `📱 ${t.footer}`;
+  // Mensaje SMS simplificado (sin emojis para evitar errores)
+  let message = `${t.title.replace('🎫 ', '')}\n\n`;
+  message += `${t.plate}: ${ticket.plate}\n`;
+  message += `${t.zone}: ${zoneName}\n`;
+  message += `${t.start}: ${ticket.start}\n`;
+  message += `${t.end}: ${ticket.end}\n`;
+  message += `${t.duration}: ${ticket.duration}\n`;
+  message += `${t.method}: ${methodName}\n`;
+  message += `${t.price}: ${ticket.price}€\n\n`;
+  message += `${t.thanks}\n\n`;
+  message += `${t.footer}`;
 
   return message;
 }
