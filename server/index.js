@@ -103,12 +103,26 @@ function formatMessage(ticket = {}, locale = 'es') {
   const t = translations[locale] || translations.es;
 
   // Función para mapear zona
-  function getZoneName(zone, loc) {
-    if (zone === 'moto') return 'Zona Moto';
-    if (zone === 'coche') return 'Zona Coche';
-    if (zone === 'camion') return 'Zona Camión';
-    if (zone === 'green') return 'Zona Verde';
-    if (zone === 'blue') return 'Zona Azul';
+  function getZoneName(zone, locale) {
+    if (locale === 'en') {
+      if (zone === 'coche') return 'Car Zone';
+      if (zone === 'moto') return 'Motorcycle Zone';
+      if (zone === 'camion') return 'Truck Zone';
+      if (zone === 'green') return 'Green Zone';
+      if (zone === 'blue') return 'Blue Zone';
+    } else if (locale === 'ca') {
+      if (zone === 'coche') return 'Zona Cotxe';
+      if (zone === 'moto') return 'Zona Moto';
+      if (zone === 'camion') return 'Zona Camió';
+      if (zone === 'green') return 'Zona Verda';
+      if (zone === 'blue') return 'Zona Blava';
+    } else {
+      if (zone === 'coche') return 'Zona Coche';
+      if (zone === 'moto') return 'Zona Moto';
+      if (zone === 'camion') return 'Zona Camión';
+      if (zone === 'green') return 'Zona Verde';
+      if (zone === 'blue') return 'Zona Azul';
+    }
     return zone;
   }
 
