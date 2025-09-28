@@ -172,7 +172,8 @@ const formatPhoneNumber = (phone) => {
 // Endpoint para enviar WhatsApp
 app.post('/v1/whatsapp/send', async (req, res) => {
   try {
-    const { phone, ticket, locale = 'es' } = req.body;
+    const { phone, ticket, localeCode = 'es' } = req.body;
+    const locale = localeCode;
     
     console.log('📱 Solicitud de WhatsApp recibida:', {
       phone: phone ? phone.substring(0, 5) + '***' : 'undefined',
