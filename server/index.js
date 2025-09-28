@@ -91,7 +91,8 @@ const translations = {
 // Función para formatear precio según locale
 function formatPrice(priceInCents, locale) {
   const price = (priceInCents / 100).toFixed(2);
-  if (locale === 'es' || locale === 'ca') {
+  const normalizedLocale = locale.split('_')[0];
+  if (normalizedLocale === 'es' || normalizedLocale === 'ca') {
     return price.replace('.', ',') + ' €';
   }
   return price + ' €';
@@ -100,17 +101,20 @@ function formatPrice(priceInCents, locale) {
 // Función para formatear mensaje de WhatsApp
 function formatMessage(ticket = {}, locale = 'es') {
   const lines = [];
-  const t = translations[locale] || translations.es;
+  // Normalizar locale (en_US -> en, ca_ES -> ca, es_ES -> es)
+  const normalizedLocale = locale.split('_')[0];
+  const t = translations[normalizedLocale] || translations.es;
 
   // Función para mapear zona
   function getZoneName(zone, locale) {
-    if (locale === 'en') {
+    const normalizedLocale = locale.split('_')[0];
+    if (normalizedLocale === 'en') {
       if (zone === 'coche') return 'Car Zone';
       if (zone === 'moto') return 'Motorcycle Zone';
       if (zone === 'camion') return 'Truck Zone';
       if (zone === 'green') return 'Green Zone';
       if (zone === 'blue') return 'Blue Zone';
-    } else if (locale === 'ca') {
+    } else if (normalizedLocale === 'ca') {
       if (zone === 'coche') return 'Zona Cotxe';
       if (zone === 'moto') return 'Zona Moto';
       if (zone === 'camion') return 'Zona Camió';
