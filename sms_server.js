@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
-const { Twilio } = require('twilio');
+const twilio = require('twilio');
 const app = express();
 const PORT = process.env.PORT || 3003;
 
@@ -35,19 +35,21 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 
-// Configurar Twilio para SMS
-const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
-const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioSmsNumber = process.env.TWILIO_SMS_NUMBER || '+15342009076';
+// Configuración de Twilio (igual que WhatsApp)
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
-let twilioClient = null;
-if (!twilioAccountSid || !twilioAuthToken) {
-  console.error('❌ TWILIO_ACCOUNT_SID o TWILIO_AUTH_TOKEN no configurados');
-} else {
-  twilioClient = new Twilio(twilioAccountSid, twilioAuthToken);
-  console.log('✅ Twilio configurado correctamente para SMS');
-  console.log(`   SMS Number: ${twilioSmsNumber}`);
-}
+// Validar configuración de Twilio
+const isTwilioConfigured = () => {
+  return process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN;
+};
+
+// Número de SMS configurable
+const getSmsFromNumber = () => {
+  return process.env.TWILIO_SMS_NUMBER || '+15342009076';
+};
 
 // Función para validar número de teléfono
 function validatePhoneNumber(phone) {
@@ -162,7 +164,7 @@ app.post('/v1/sms/send', async (req, res) => {
       });
     }
 
-    if (!twilioClient) {
+    if (!isTwilioConfigured()) {
       return res.status(500).json({
         success: false,
         error: 'Twilio not configured',
@@ -175,14 +177,14 @@ app.post('/v1/sms/send', async (req, res) => {
     
     console.log('📱 Enviando SMS:', {
       to: phone,
-      from: twilioSmsNumber,
+      from: getSmsFromNumber(),
       messageLength: formattedMessage.length
     });
 
     // Enviar SMS
-    const result = await twilioClient.messages.create({
+    const result = await client.messages.create({
       body: formattedMessage,
-      from: twilioSmsNumber,
+      from: getSmsFromNumber(),
       to: phone
     });
 
@@ -228,8 +230,8 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
     service: 'SMS Service',
-    twilioConfigured: twilioClient ? 'configured' : 'not configured',
-    smsFrom: twilioSmsNumber,
+    twilioConfigured: isTwilioConfigured() ? 'configured' : 'not configured',
+    smsFrom: getSmsFromNumber(),
     timestamp: new Date().toISOString()
   });
 });
