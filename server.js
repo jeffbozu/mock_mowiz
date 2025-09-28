@@ -78,7 +78,7 @@ const zonas = {
     name  : 'Zona Camión',
     color : '#9C27B0',
     bloques: [
-      { minutos: 15, timeInSeconds:  900, priceInCents:  20 },
+      { minutos: 15, timeInSeconds:  900, priceInCents:  25 },
       { minutos: 30, timeInSeconds: 1800, priceInCents:  36 },
       { minutos: 60, timeInSeconds: 3600, priceInCents:  65 },
       { minutos:120, timeInSeconds: 7200, priceInCents: 120 },
