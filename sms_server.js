@@ -38,7 +38,7 @@ app.use(express.json({ limit: '10mb' }));
 // Configurar Twilio para SMS
 const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
 const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioSmsNumber = process.env.TWILIO_SMS_NUMBER || '+14155238886';
+const twilioSmsNumber = process.env.TWILIO_SMS_NUMBER || '+15342009076';
 
 let twilioClient = null;
 if (!twilioAccountSid || !twilioAuthToken) {
