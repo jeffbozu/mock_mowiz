@@ -9,8 +9,16 @@ const { getTranslations, formatDateTime, formatDuration } = require('./translati
 const { generateTicketPDF } = require('./pdf-generator');
 require('dotenv').config();
 
-// Configurar SendGrid API
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Configurar SendGrid API con validación
+const sendGridApiKey = process.env.SENDGRID_API_KEY;
+if (!sendGridApiKey) {
+  console.error('❌ SENDGRID_API_KEY no configurada');
+} else {
+  // Limpiar la API Key de caracteres inválidos
+  const cleanApiKey = sendGridApiKey.replace(/[^\x20-\x7E]/g, '');
+  sgMail.setApiKey(cleanApiKey);
+  console.log('✅ SendGrid API Key configurada correctamente');
+}
 
 const app = express();
 const PORT = process.env.PORT || 4000;
