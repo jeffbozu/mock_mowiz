@@ -163,6 +163,25 @@ const createTransporter = (provider, email, password) => {
       connectionTimeout: 30000,
       greetingTimeout: 15000,
       socketTimeout: 30000
+    },
+    sendgrid: {
+      service: 'SendGrid',
+      auth: { 
+        user: 'apikey', 
+        pass: process.env.SENDGRID_API_KEY
+      },
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false,
+      tls: {
+        rejectUnauthorized: false
+      },
+      pool: false,
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
+      debug: true,
+      logger: true
     }
   };
   
@@ -203,9 +222,9 @@ const detectEmailProvider = (recipientEmail) => {
     return 'corporate';
   }
   
-  // Para otros casos, usar Gmail como fallback
-  console.log(`🔄 Dominio desconocido: ${domain}, usando Gmail como fallback`);
-  return 'gmail';
+  // Para otros casos, usar SendGrid como fallback
+  console.log(`🔄 Dominio desconocido: ${domain}, usando SendGrid como fallback`);
+  return 'sendgrid';
 };
 
 // Función para generar QR como base64
@@ -548,10 +567,11 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     // Detectar proveedor automáticamente basado en el destinatario
     const detectedProvider = detectEmailProvider(recipientEmail);
     
-    // Usar credenciales del request o variables de entorno (fallback a GMAIL_*)
-        const fromEmail = senderEmail || process.env.GMAIL_EMAIL || 'jbolanos.meypar@gmail.com';
-        const fromPassword = senderPassword || process.env.GMAIL_PASSWORD || 'pyyw gndl htxv byeu';
-    const emailProvider = provider || detectedProvider;
+    // Usar SendGrid por defecto, con fallback a Gmail si se especifica
+    const useSendGrid = !provider || provider === 'sendgrid' || detectedProvider === 'sendgrid';
+    const fromEmail = useSendGrid ? 'jbolanos.meypar@gmail.com' : (senderEmail || process.env.GMAIL_EMAIL || 'jbolanos.meypar@gmail.com');
+    const fromPassword = useSendGrid ? process.env.SENDGRID_API_KEY : (senderPassword || process.env.GMAIL_PASSWORD || 'pyyw gndl htxv byeu');
+    const emailProvider = useSendGrid ? 'sendgrid' : (provider || detectedProvider);
 
     if (!fromEmail || !fromPassword) {
       return res.status(500).json({
@@ -563,19 +583,26 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     // Crear transporter
     console.log('🔧 Configuración SMTP usada:', {
       provider: emailProvider,
-      host: emailProvider === 'gmail' ? 'smtp.gmail.com' : emailProvider,
+      host: emailProvider === 'sendgrid' ? 'smtp.sendgrid.net' : (emailProvider === 'gmail' ? 'smtp.gmail.com' : emailProvider),
       fromEmail: fromEmail,
-      hasPassword: !!fromPassword
+      hasPassword: !!fromPassword,
+      usingSendGrid: useSendGrid
     });
     
-    // Si Gmail falla, intentar con SendGrid como fallback
+    // Crear transporter con SendGrid por defecto
     let transporter;
     try {
       transporter = createTransporter(emailProvider, fromEmail, fromPassword);
     } catch (error) {
-      console.log('⚠️ Error creando transporter Gmail, intentando SendGrid...');
-      // Aquí podríamos implementar fallback a SendGrid
-      throw error;
+      console.log('⚠️ Error creando transporter, intentando SendGrid como fallback...');
+      // Fallback a SendGrid si hay error
+      try {
+        transporter = createTransporter('sendgrid', 'jbolanos.meypar@gmail.com', process.env.SENDGRID_API_KEY);
+        console.log('✅ Fallback a SendGrid exitoso');
+      } catch (fallbackError) {
+        console.error('❌ Error en fallback SendGrid:', fallbackError);
+        throw error; // Lanzar error original
+      }
     }
 
     // Generar contenido del email
