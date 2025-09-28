@@ -76,16 +76,17 @@ const createTransporter = (provider, email, password) => {
   const configs = {
     gmail: {
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // SSL/TLS
+      port: 587,
+      secure: false, // TLS en lugar de SSL
       auth: { user: email, pass: password },
       tls: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        ciphers: 'SSLv3'
       },
       pool: false, // Deshabilitar pool para evitar problemas
-      connectionTimeout: 30000,
-      greetingTimeout: 15000,
-      socketTimeout: 30000,
+      connectionTimeout: 60000, // Aumentar timeout
+      greetingTimeout: 30000,
+      socketTimeout: 60000,
       debug: true,
       logger: true
     },
