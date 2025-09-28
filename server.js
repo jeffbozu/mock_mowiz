@@ -315,6 +315,14 @@ const generateTicketHTML = async (ticketData, locale = 'es') => {
         </div>
         ` : ''}
         
+        <div style="background-color: #f8f9fa; border-left: 4px solid #6c757d; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <h4 style="color: #495057; margin-top: 0;">📧 Información Importante</h4>
+            <p style="color: #495057; margin-bottom: 0; font-size: 14px;">
+                Este email ha sido enviado automáticamente por el sistema Meypark. 
+                Si no desea recibir más comunicaciones, puede darse de baja respondiendo a este email con "UNSUBSCRIBE".
+            </p>
+        </div>
+        
         <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 4px;">
             <h4 style="color: #155724; margin-top: 0;">📎 ${t.pdfAttached}</h4>
             <p style="color: #155724; margin-bottom: 0;">${t.pdfDescription}</p>
@@ -457,9 +465,9 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
         email: 'jbolanos.meypar@gmail.com',
         name: 'Meypark Support'
       },
-      subject: subject,
+      subject: `Meypark - Ticket de Estacionamiento ${plate}`,
       html: htmlContent,
-      text: `${t.title}\n\n${t.plate}: ${plate}\n${t.zone}: ${zone}\n${t.startTime}: ${start}\n${t.endTime}: ${end}\n${t.price}: ${price}€\n${t.method}: ${method}`,
+      text: `Meypark - Ticket de Estacionamiento\n\nEstimado cliente,\n\nHemos procesado exitosamente su pago de estacionamiento.\n\nDetalles del ticket:\n- Matrícula: ${plate}\n- Zona: ${zone}\n- Inicio: ${start}\n- Fin: ${end}\n- Precio: ${price}€\n- Método: ${method}\n\nGracias por elegir Meypark.\n\nEste es un email automático, por favor no responda.\n\nMeypark - Sistema de Gestión de Aparcamiento`,
       // Mejoras de entregabilidad
       categories: ['parking-ticket', 'meypark'],
       customArgs: {
@@ -467,11 +475,16 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
         zone: zone,
         price: price.toString()
       },
-      // Headers para mejorar entregabilidad
+      // Headers para mejorar entregabilidad y evitar spam
       headers: {
         'X-Priority': '3',
         'X-MSMail-Priority': 'Normal',
-        'X-Mailer': 'Meypark System v2.0'
+        'X-Mailer': 'Meypark System v2.0',
+        'X-Entity-Ref-ID': `meypark-${Date.now()}`,
+        'X-Auto-Response-Suppress': 'All',
+        'Precedence': 'bulk',
+        'List-Unsubscribe': '<mailto:unsubscribe@meypark.com>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
       },
       attachments: [
         // Adjuntar PDF del ticket
