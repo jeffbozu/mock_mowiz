@@ -9,6 +9,9 @@ const { getTranslations, formatDateTime, formatDuration } = require('./translati
 const { generateTicketPDF } = require('./pdf-generator');
 require('dotenv').config();
 
+// Configurar zona horaria para Madrid (CEST/CET)
+process.env.TZ = 'Europe/Madrid';
+
 // Configurar SendGrid API con validación
 const sendGridApiKey = process.env.SENDGRID_API_KEY;
 if (!sendGridApiKey) {
@@ -362,10 +365,13 @@ const generateTicketHTML = async (ticketData, locale = 'es') => {
 
 // Endpoint principal para enviar emails usando SendGrid API REST
 app.post('/api/send-email', emailLimiter, async (req, res) => {
+  const now = new Date();
   console.log('📧 Petición de envío de email recibida:', {
     recipientEmail: req.body.recipientEmail,
     plate: req.body.plate,
-    provider: 'sendgrid-api'
+    provider: 'sendgrid-api',
+    timestamp: now.toISOString(),
+    localTime: now.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })
   });
   
   try {
@@ -571,9 +577,12 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
 
 // Endpoint de salud
 app.get('/health', (req, res) => {
+  const now = new Date();
   res.json({
     status: 'OK',
-    timestamp: new Date().toISOString(),
+    timestamp: now.toISOString(),
+    localTime: now.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),
+    timezone: 'Europe/Madrid',
     uptime: process.uptime(),
     memoryUsage: process.memoryUsage(),
     transporterPoolSize: 0,
