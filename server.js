@@ -446,16 +446,33 @@ app.post('/api/send-email', emailLimiter, async (req, res) => {
     
     console.log('🧾 PDF generado. Tamaño:', pdfBufferResult?.length, 'bytes');
 
-    // Configurar email para SendGrid API REST
+    // Configurar email para SendGrid API REST con mejoras de entregabilidad
     const msg = {
       to: recipientEmail,
       from: {
         email: 'jbolanos.meypar@gmail.com',
         name: 'Meypark'
       },
+      replyTo: {
+        email: 'jbolanos.meypar@gmail.com',
+        name: 'Meypark Support'
+      },
       subject: subject,
       html: htmlContent,
       text: `${t.title}\n\n${t.plate}: ${plate}\n${t.zone}: ${zone}\n${t.startTime}: ${start}\n${t.endTime}: ${end}\n${t.price}: ${price}€\n${t.method}: ${method}`,
+      // Mejoras de entregabilidad
+      categories: ['parking-ticket', 'meypark'],
+      customArgs: {
+        ticket_id: `ticket-${plate}-${Date.now()}`,
+        zone: zone,
+        price: price.toString()
+      },
+      // Headers para mejorar entregabilidad
+      headers: {
+        'X-Priority': '3',
+        'X-MSMail-Priority': 'Normal',
+        'X-Mailer': 'Meypark System v2.0'
+      },
       attachments: [
         // Adjuntar PDF del ticket
         {
