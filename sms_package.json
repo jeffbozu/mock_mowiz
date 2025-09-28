@@ -1,0 +1,34 @@
+{
+  "name": "kiosk-sms-server",
+  "version": "1.0.0",
+  "description": "Servidor de SMS para KioskApp - Usando Twilio",
+  "main": "sms_server.js",
+  "scripts": {
+    "start": "node sms_server.js",
+    "dev": "nodemon sms_server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4",
+    "twilio": "^4.19.0",
+    "dotenv": "^16.6.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "sms",
+    "kiosk",
+    "parking",
+    "tickets",
+    "render",
+    "twilio"
+  ],
+  "author": "KioskApp Team",
+  "license": "MIT",
+  "type": "commonjs"
+}
