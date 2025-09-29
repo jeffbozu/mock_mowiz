@@ -53,10 +53,10 @@ app.use(express.json({ limit: '1mb' }));          // body-parser para /pay-ticke
 /* ---- 3. Datos mock ------------------------------------------- */
 const zonas = {
   blue: {
-    name  : 'Zona azul',
+    name  : 'Zona azul1',
     color : '#0000FF',
     bloques: [
-      { minutos: 3,  timeInSeconds:  180, priceInCents:  80 },
+      { minutos: 3,  timeInSeconds:  180, priceInCents:  55 },
       { minutos: 10, timeInSeconds:  600, priceInCents:  90 },
       { minutos: 25, timeInSeconds:  1500, priceInCents:  65 },
       { minutos: 120, timeInSeconds: 7200, priceInCents:  90 },
