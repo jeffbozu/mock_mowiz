@@ -53,10 +53,10 @@ app.use(express.json({ limit: '1mb' }));          // body-parser para /pay-ticke
 /* ---- 3. Datos mock (Zonas + bloques + colores) ---------------- */
 const zonas = {
   coche: {                       /*  Zona COCHE  */
-    name  : 'Zona Coche',
+    name  : 'Zona Trailer',
     color : '#FFD600',
     bloques: [
-      { minutos:  8, timeInSeconds:  480, priceInCents:  20 },
+      { minutos:  8, timeInSeconds:  480, priceInCents:  50 },
       { minutos: 16, timeInSeconds:  960, priceInCents:  34 },
       { minutos: 32, timeInSeconds: 1920, priceInCents:  65 },
       { minutos: 60, timeInSeconds: 3600, priceInCents: 110 },
