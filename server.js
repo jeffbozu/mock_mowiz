@@ -65,10 +65,10 @@ const zonas = {
     maxDurationSeconds: 3600,   // 1 h
   },
   green: {
-    name  : 'Zona verde',
-    color : '#01AE00',
+    name  : 'Zona Verde',
+    color : '#008000',
     bloques: [
-      { minutos: 5,  timeInSeconds:  300, priceInCents:  25 },
+      { minutos: 5,  timeInSeconds:  300, priceInCents:  10 },
       { minutos: 10, timeInSeconds:  600, priceInCents:  40 },
       { minutos: 15, timeInSeconds:  900, priceInCents:  60 },
       { minutos: 30, timeInSeconds: 1800, priceInCents: 100 },
